@@ -9,7 +9,11 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
+import ClienteNovo from "./pages/ClienteNovo";
+import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Colaboradores from "./pages/Colaboradores";
+import ColaboradorNovo from "./pages/ColaboradorNovo";
+import ColaboradorDetalhes from "./pages/ColaboradorDetalhes";
 import Configuracoes from "./pages/Configuracoes";
 import ClickupResponsaveis from "./pages/clickup/Responsaveis";
 import ClickupTarefas from "./pages/clickup/Tarefas";
@@ -46,10 +50,42 @@ const App = () => (
                 }
               />
               <Route
+                path="/clientes/novo"
+                element={
+                  <ProtectedRoute>
+                    <ClienteNovo />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clientes/:id"
+                element={
+                  <ProtectedRoute>
+                    <ClienteDetalhes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/colaboradores"
                 element={
                   <ProtectedRoute>
                     <Colaboradores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/colaboradores/novo"
+                element={
+                  <ProtectedRoute>
+                    <ColaboradorNovo />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/colaboradores/:id"
+                element={
+                  <ProtectedRoute>
+                    <ColaboradorDetalhes />
                   </ProtectedRoute>
                 }
               />
