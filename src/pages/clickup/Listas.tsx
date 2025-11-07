@@ -28,12 +28,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function ClickupListas() {
   const [listas, setListas] = useState<any[]>([]);
   const [pastas, setPastas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editLista, setEditLista] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const [formData, setFormData] = useState({
     id_pasta: "",
     nome_lista: "",
@@ -109,6 +112,16 @@ export default function ClickupListas() {
     setOpen(true);
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [listas.length]);
+
+  const totalPages = Math.max(1, Math.ceil(listas.length / itemsPerPage));
+  const paginatedListas = listas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -119,7 +132,12 @@ export default function ClickupListas() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditLista(null); setFormData({ id_pasta: "", nome_lista: "", id_lista: "" }); }}>
+              <Button
+                onClick={() => {
+                  setEditLista(null);
+                  setFormData({ id_pasta: "", nome_lista: "", id_lista: "" });
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Lista
               </Button>
@@ -171,21 +189,34 @@ export default function ClickupListas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {listas.map((lista) => (
-                <TableRow key={lista.id} className="cursor-pointer" onClick={() => handleEdit(lista)}>
-                  <TableCell className="font-medium">{lista.nome_lista}</TableCell>
-                  <TableCell>{lista.nome_pasta}</TableCell>
-                  <TableCell>{lista.id_lista}</TableCell>
-                  <TableCell>
-                    {lista.data_criacao
-                      ? new Date(lista.data_criacao).toLocaleDateString("pt-BR")
-                      : "-"}
+              {paginatedListas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    Nenhuma lista cadastrada.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedListas.map((lista) => (
+                  <TableRow key={lista.id} className="cursor-pointer" onClick={() => handleEdit(lista)}>
+                    <TableCell className="font-medium">{lista.nome_lista}</TableCell>
+                    <TableCell>{lista.nome_pasta}</TableCell>
+                    <TableCell>{lista.id_lista}</TableCell>
+                    <TableCell>
+                      {lista.data_criacao
+                        ? new Date(lista.data_criacao).toLocaleDateString("pt-BR")
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </Layout>
   );

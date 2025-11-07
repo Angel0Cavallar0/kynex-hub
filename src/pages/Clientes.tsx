@@ -14,11 +14,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAtivo, setFilterAtivo] = useState<boolean | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,6 +50,16 @@ export default function Clientes() {
 
   const filteredClientes = clientes.filter((cliente) =>
     cliente.nome_cliente?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterAtivo]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredClientes.length / itemsPerPage));
+  const paginatedClientes = filteredClientes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -108,37 +121,50 @@ export default function Clientes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClientes.map((cliente) => (
-                <TableRow
-                  key={cliente.id_cliente}
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/clientes/${cliente.id_cliente}`)}
-                >
-                  <TableCell className="font-medium">{cliente.nome_cliente}</TableCell>
-                  <TableCell>{cliente.cnpj}</TableCell>
-                  <TableCell>{cliente.segmento}</TableCell>
-                  <TableCell>
-                    <Badge variant={cliente.cliente_ativo ? "default" : "secondary"}>
-                      {cliente.cliente_ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {cliente.gestao_trafego ? (
-                      <Badge>Sim</Badge>
-                    ) : (
-                      <Badge variant="outline">Não</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {cliente.data_contrato
-                      ? new Date(cliente.data_contrato).toLocaleDateString("pt-BR")
-                      : "-"}
+              {paginatedClientes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    Nenhum cliente encontrado.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedClientes.map((cliente) => (
+                  <TableRow
+                    key={cliente.id_cliente}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/clientes/${cliente.id_cliente}`)}
+                  >
+                    <TableCell className="font-medium">{cliente.nome_cliente}</TableCell>
+                    <TableCell>{cliente.cnpj}</TableCell>
+                    <TableCell>{cliente.segmento}</TableCell>
+                    <TableCell>
+                      <Badge variant={cliente.cliente_ativo ? "default" : "secondary"}>
+                        {cliente.cliente_ativo ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {cliente.gestao_trafego ? (
+                        <Badge>Sim</Badge>
+                      ) : (
+                        <Badge variant="outline">Não</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cliente.data_contrato
+                        ? new Date(cliente.data_contrato).toLocaleDateString("pt-BR")
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </Layout>
   );

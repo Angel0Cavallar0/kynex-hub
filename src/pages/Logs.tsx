@@ -153,7 +153,7 @@ export default function Logs() {
                             <summary className="cursor-pointer hover:text-foreground">
                               Ver contexto
                             </summary>
-                            <pre className="mt-2 p-3 bg-muted rounded text-xs overflow-auto">
+                            <pre className="mt-2 p-3 bg-muted rounded text-xs whitespace-pre-wrap break-words">
                               {JSON.stringify(log.context, null, 2)}
                             </pre>
                           </details>

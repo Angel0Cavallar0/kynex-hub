@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function Colaboradores() {
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +44,16 @@ export default function Colaboradores() {
     const nomeCompleto = `${colab.nome} ${colab.sobrenome}`.toLowerCase();
     return nomeCompleto.includes(searchTerm.toLowerCase());
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredColaboradores.length / itemsPerPage));
+  const paginatedColaboradores = filteredColaboradores.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <Layout>
@@ -79,35 +92,48 @@ export default function Colaboradores() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredColaboradores.map((colab) => (
-                <TableRow
-                  key={colab.id_colaborador}
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/colaboradores/${colab.id_colaborador}`)}
-                >
-                  <TableCell className="font-medium">
-                    {colab.nome} {colab.sobrenome}
+              {paginatedColaboradores.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    Nenhum colaborador encontrado.
                   </TableCell>
-                  <TableCell>{colab.apelido}</TableCell>
-                  <TableCell>{colab.cargo}</TableCell>
-                  <TableCell>{colab.email_corporativo}</TableCell>
-                  <TableCell>
-                    {colab.colab_ferias ? (
-                      <Badge variant="secondary">Férias</Badge>
-                    ) : colab.colab_afastado ? (
-                      <Badge variant="destructive">Afastado</Badge>
-                    ) : colab.colab_ativo ? (
-                      <Badge>Ativo</Badge>
-                    ) : (
-                      <Badge variant="outline">Inativo</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{colab.id_clickup || "-"}</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedColaboradores.map((colab) => (
+                  <TableRow
+                    key={colab.id_colaborador}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/colaboradores/${colab.id_colaborador}`)}
+                  >
+                    <TableCell className="font-medium">
+                      {colab.nome} {colab.sobrenome}
+                    </TableCell>
+                    <TableCell>{colab.apelido}</TableCell>
+                    <TableCell>{colab.cargo}</TableCell>
+                    <TableCell>{colab.email_corporativo}</TableCell>
+                    <TableCell>
+                      {colab.colab_ferias ? (
+                        <Badge variant="secondary">Férias</Badge>
+                      ) : colab.colab_afastado ? (
+                        <Badge variant="destructive">Afastado</Badge>
+                      ) : colab.colab_ativo ? (
+                        <Badge>Ativo</Badge>
+                      ) : (
+                        <Badge variant="outline">Inativo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{colab.id_clickup || "-"}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </Layout>
   );

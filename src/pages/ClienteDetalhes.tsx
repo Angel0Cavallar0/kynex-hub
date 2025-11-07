@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function ClienteDetalhes() {
   const { id } = useParams();
@@ -41,6 +42,8 @@ export default function ClienteDetalhes() {
   const [loading, setLoading] = useState(false);
   const [cliente, setCliente] = useState<any>(null);
   const [contatos, setContatos] = useState<any[]>([]);
+  const [currentPageContacts, setCurrentPageContacts] = useState(1);
+  const contactsPerPage = 5;
   const [openContatoDialog, setOpenContatoDialog] = useState(false);
   const [editContato, setEditContato] = useState<any>(null);
   const [deleteContatoId, setDeleteContatoId] = useState<string | null>(null);
@@ -87,6 +90,10 @@ export default function ClienteDetalhes() {
 
     setContatos(data || []);
   };
+
+  useEffect(() => {
+    setCurrentPageContacts(1);
+  }, [contatos.length]);
 
   const handleUpdateCliente = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +192,12 @@ export default function ClienteDetalhes() {
       </Layout>
     );
   }
+
+  const totalContactPages = Math.max(1, Math.ceil(contatos.length / contactsPerPage));
+  const paginatedContatos = contatos.slice(
+    (currentPageContacts - 1) * contactsPerPage,
+    currentPageContacts * contactsPerPage
+  );
 
   return (
     <Layout>
@@ -390,47 +403,54 @@ export default function ClienteDetalhes() {
                 Nenhum contato cadastrado
               </p>
             ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>WhatsApp</TableHead>
-                      <TableHead className="w-[100px]">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contatos.map((contato) => (
-                      <TableRow key={contato.id_contato}>
-                        <TableCell className="font-medium">
-                          {contato.nome_contato}
-                        </TableCell>
-                        <TableCell>{contato.email || "-"}</TableCell>
-                        <TableCell>{contato.numero_whatsapp || "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditContato(contato)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setDeleteContatoId(contato.id_contato)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>WhatsApp</TableHead>
+                        <TableHead className="w-[100px]">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedContatos.map((contato) => (
+                        <TableRow key={contato.id_contato}>
+                          <TableCell className="font-medium">
+                            {contato.nome_contato}
+                          </TableCell>
+                          <TableCell>{contato.email || "-"}</TableCell>
+                          <TableCell>{contato.numero_whatsapp || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditContato(contato)}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDeleteContatoId(contato.id_contato)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <PaginationControls
+                  currentPage={currentPageContacts}
+                  totalPages={totalContactPages}
+                  onPageChange={setCurrentPageContacts}
+                />
+              </>
             )}
           </CardContent>
         </Card>

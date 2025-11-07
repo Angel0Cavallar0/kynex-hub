@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -19,28 +17,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function ClickupTarefas() {
   const [tarefas, setTarefas] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
   const [colaboradores, setColaboradores] = useState<any[]>([]);
-  const [filtroCliente, setFiltroCliente] = useState<string>("");
   const [filtroColaborador, setFiltroColaborador] = useState<string>("");
   const [filtroStatus, setFiltroStatus] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    const [tarefasRes, clientesRes, colaboradoresRes] = await Promise.all([
+    const [tarefasRes, colaboradoresRes] = await Promise.all([
       supabase.from("informacoes_tasks_clickup").select("*"),
-      supabase.from("clientes_infos").select("id_cliente, nome_cliente"),
       supabase.from("colaborador").select("id_clickup, nome, sobrenome"),
     ]);
 
     if (tarefasRes.data) setTarefas(tarefasRes.data);
-    if (clientesRes.data) setClientes(clientesRes.data);
     if (colaboradoresRes.data) setColaboradores(colaboradoresRes.data);
   };
 
@@ -51,6 +48,16 @@ export default function ClickupTarefas() {
     if (filtroStatus && tarefa.status !== filtroStatus) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtroColaborador, filtroStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTarefas.length / itemsPerPage));
+  const paginatedTarefas = filteredTarefas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getPrioridadeBadge = (prioridade: string) => {
     const variants: any = {
@@ -119,35 +126,48 @@ export default function ClickupTarefas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTarefas.map((tarefa) => (
-                <TableRow
-                  key={tarefa.id_subtask}
-                  className={isOverdue(tarefa.data_entrega, tarefa.status) ? "bg-destructive/10" : ""}
-                >
-                  <TableCell className="font-medium">{tarefa.nome_subtask}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{tarefa.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {tarefa.prioridade && (
-                      <Badge variant={getPrioridadeBadge(tarefa.prioridade)}>
-                        {tarefa.prioridade}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{tarefa.nome_colaborador}</TableCell>
-                  <TableCell>{tarefa.nome_lista}</TableCell>
-                  <TableCell>{tarefa.nome_pasta}</TableCell>
-                  <TableCell>
-                    {tarefa.data_entrega
-                      ? new Date(tarefa.data_entrega).toLocaleDateString("pt-BR")
-                      : "-"}
+              {paginatedTarefas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    Nenhuma tarefa encontrada.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedTarefas.map((tarefa) => (
+                  <TableRow
+                    key={tarefa.id_subtask}
+                    className={isOverdue(tarefa.data_entrega, tarefa.status) ? "bg-destructive/10" : ""}
+                  >
+                    <TableCell className="font-medium">{tarefa.nome_subtask}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{tarefa.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {tarefa.prioridade && (
+                        <Badge variant={getPrioridadeBadge(tarefa.prioridade)}>
+                          {tarefa.prioridade}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{tarefa.nome_colaborador}</TableCell>
+                    <TableCell>{tarefa.nome_lista}</TableCell>
+                    <TableCell>{tarefa.nome_pasta}</TableCell>
+                    <TableCell>
+                      {tarefa.data_entrega
+                        ? new Date(tarefa.data_entrega).toLocaleDateString("pt-BR")
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </Layout>
   );

@@ -28,12 +28,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { PaginationControls } from "@/components/PaginationControls";
 
 export default function ClickupPastas() {
   const [pastas, setPastas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editPasta, setEditPasta] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const [formData, setFormData] = useState({
     id_cliente: "",
     nome_pasta: "",
@@ -115,6 +118,16 @@ export default function ClickupPastas() {
     setOpen(true);
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pastas.length]);
+
+  const totalPages = Math.max(1, Math.ceil(pastas.length / itemsPerPage));
+  const paginatedPastas = pastas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -125,7 +138,18 @@ export default function ClickupPastas() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditPasta(null); setFormData({ id_cliente: "", nome_pasta: "", id_pasta: "", nome_espaco: "", id_espaco: "" }); }}>
+              <Button
+                onClick={() => {
+                  setEditPasta(null);
+                  setFormData({
+                    id_cliente: "",
+                    nome_pasta: "",
+                    id_pasta: "",
+                    nome_espaco: "",
+                    id_espaco: "",
+                  });
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Pasta
               </Button>
@@ -187,23 +211,36 @@ export default function ClickupPastas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pastas.map((pasta) => (
-                <TableRow key={pasta.id} className="cursor-pointer" onClick={() => handleEdit(pasta)}>
-                  <TableCell>{pasta.nome_cliente}</TableCell>
-                  <TableCell className="font-medium">{pasta.nome_pasta}</TableCell>
-                  <TableCell>{pasta.id_pasta}</TableCell>
-                  <TableCell>{pasta.nome_espaco}</TableCell>
-                  <TableCell>{pasta.id_espaco}</TableCell>
-                  <TableCell>
-                    {pasta.data_criacao
-                      ? new Date(pasta.data_criacao).toLocaleDateString("pt-BR")
-                      : "-"}
+              {paginatedPastas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    Nenhuma pasta cadastrada.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedPastas.map((pasta) => (
+                  <TableRow key={pasta.id} className="cursor-pointer" onClick={() => handleEdit(pasta)}>
+                    <TableCell>{pasta.nome_cliente}</TableCell>
+                    <TableCell className="font-medium">{pasta.nome_pasta}</TableCell>
+                    <TableCell>{pasta.id_pasta}</TableCell>
+                    <TableCell>{pasta.nome_espaco}</TableCell>
+                    <TableCell>{pasta.id_espaco}</TableCell>
+                    <TableCell>
+                      {pasta.data_criacao
+                        ? new Date(pasta.data_criacao).toLocaleDateString("pt-BR")
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </Layout>
   );

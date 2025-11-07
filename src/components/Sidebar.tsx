@@ -25,12 +25,15 @@ const menuItems = [
 
 export function Sidebar() {
   const { signOut, userRole } = useAuth();
-  const { logoUrl } = useTheme();
+  const { logoUrl, sidebarColor } = useTheme();
   const [clickUpOpen, setClickUpOpen] = useState(false);
   const location = useLocation();
 
   return (
-    <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
+    <aside
+      className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col"
+      style={{ backgroundColor: `hsl(${sidebarColor})` }}
+    >
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         {logoUrl ? (
