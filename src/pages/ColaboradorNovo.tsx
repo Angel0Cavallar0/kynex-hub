@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -29,8 +29,7 @@ export default function ColaboradorNovo() {
     colab_ativo: true,
     colab_ferias: false,
     colab_afastado: false,
-    admin: false,
-    supervisor: false,
+    role: "user" as "user" | "supervisor" | "admin",
   });
 
   const [privateData, setPrivateData] = useState({
@@ -44,9 +43,17 @@ export default function ColaboradorNovo() {
     setLoading(true);
 
     try {
+      const { role, ...rest } = formData;
+
+      const payload = {
+        ...rest,
+        admin: role === "admin",
+        supervisor: role === "supervisor",
+      };
+
       const { data: colaboradorData, error: colaboradorError } = await supabase
         .from("colaborador")
-        .insert([formData])
+        .insert([payload])
         .select()
         .single();
 
@@ -90,7 +97,7 @@ export default function ColaboradorNovo() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 w-full max-w-6xl mx-auto">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/colaboradores")}>
             <ArrowLeft className="h-5 w-5" />
@@ -102,200 +109,258 @@ export default function ColaboradorNovo() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Principais</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome *</Label>
-                  <Input
-                    id="nome"
-                    required
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sobrenome">Sobrenome</Label>
-                  <Input
-                    id="sobrenome"
-                    value={formData.sobrenome}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sobrenome: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
+          <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Principais</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome">Nome *</Label>
+                      <Input
+                        id="nome"
+                        required
+                        value={formData.nome}
+                        onChange={(e) =>
+                          setFormData({ ...formData, nome: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sobrenome">Sobrenome</Label>
+                      <Input
+                        id="sobrenome"
+                        value={formData.sobrenome}
+                        onChange={(e) =>
+                          setFormData({ ...formData, sobrenome: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="apelido">Apelido</Label>
-                  <Input
-                    id="apelido"
-                    value={formData.apelido}
-                    onChange={(e) => setFormData({ ...formData, apelido: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cargo">Cargo</Label>
-                  <Input
-                    id="cargo"
-                    value={formData.cargo}
-                    onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="apelido">Apelido</Label>
+                      <Input
+                        id="apelido"
+                        value={formData.apelido}
+                        onChange={(e) =>
+                          setFormData({ ...formData, apelido: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cargo">Cargo</Label>
+                      <Input
+                        id="cargo"
+                        value={formData.cargo}
+                        onChange={(e) =>
+                          setFormData({ ...formData, cargo: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email_corporativo">Email Corporativo</Label>
-                <Input
-                  id="email_corporativo"
-                  type="email"
-                  value={formData.email_corporativo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email_corporativo: e.target.value })
-                  }
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email_corporativo">Email Corporativo</Label>
+                    <Input
+                      id="email_corporativo"
+                      type="email"
+                      value={formData.email_corporativo}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email_corporativo: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="id_clickup">ID ClickUp</Label>
-                  <Input
-                    id="id_clickup"
-                    value={formData.id_clickup}
-                    onChange={(e) =>
-                      setFormData({ ...formData, id_clickup: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="id_slack">ID Slack</Label>
-                  <Input
-                    id="id_slack"
-                    value={formData.id_slack}
-                    onChange={(e) => setFormData({ ...formData, id_slack: e.target.value })}
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="id_clickup">ID ClickUp</Label>
+                      <Input
+                        id="id_clickup"
+                        value={formData.id_clickup}
+                        onChange={(e) =>
+                          setFormData({ ...formData, id_clickup: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="id_slack">ID Slack</Label>
+                      <Input
+                        id="id_slack"
+                        value={formData.id_slack}
+                        onChange={(e) =>
+                          setFormData({ ...formData, id_slack: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="data_admissao">Data de Admissão</Label>
-                <Input
-                  id="data_admissao"
-                  type="date"
-                  value={formData.data_admissao}
-                  onChange={(e) =>
-                    setFormData({ ...formData, data_admissao: e.target.value })
-                  }
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="data_admissao">Data de Admissão</Label>
+                    <Input
+                      id="data_admissao"
+                      type="date"
+                      value={formData.data_admissao}
+                      onChange={(e) =>
+                        setFormData({ ...formData, data_admissao: e.target.value })
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="colab_ativo">Colaborador Ativo</Label>
-                  <Switch
-                    id="colab_ativo"
-                    checked={formData.colab_ativo}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, colab_ativo: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="colab_ferias">Em Férias</Label>
-                  <Switch
-                    id="colab_ferias"
-                    checked={formData.colab_ferias}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, colab_ferias: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="colab_afastado">Afastado</Label>
-                  <Switch
-                    id="colab_afastado"
-                    checked={formData.colab_afastado}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, colab_afastado: checked })
-                    }
-                  />
-                </div>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Status do Colaborador</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="colab_ativo">Colaborador Ativo</Label>
+                    <Switch
+                      id="colab_ativo"
+                      checked={formData.colab_ativo}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, colab_ativo: checked })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="colab_ferias">Em Férias</Label>
+                    <Switch
+                      id="colab_ferias"
+                      checked={formData.colab_ferias}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, colab_ferias: checked })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="colab_afastado">Afastado</Label>
+                    <Switch
+                      id="colab_afastado"
+                      checked={formData.colab_afastado}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, colab_afastado: checked })
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <div className="flex flex-col gap-4 pt-4 border-t">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="admin"
-                    checked={formData.admin}
-                    onCheckedChange={(checked) => setFormData({ ...formData, admin: checked as boolean })}
-                  />
-                  <Label htmlFor="admin" className="cursor-pointer">
-                    Administrador
-                  </Label>
-                </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Acesso e Permissões</CardTitle>
+                  <CardDescription>
+                    Defina o nível de acesso do colaborador
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <RadioGroup
+                    value={formData.role}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        role: value as "user" | "supervisor" | "admin",
+                      })
+                    }
+                  >
+                    <div className="flex items-center space-x-3 rounded-lg border p-3">
+                      <RadioGroupItem value="admin" id="admin" />
+                      <div>
+                        <Label htmlFor="admin" className="cursor-pointer">
+                          Administrador
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Acesso completo a todas as seções e configurações.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border p-3">
+                      <RadioGroupItem value="supervisor" id="supervisor" />
+                      <div>
+                        <Label htmlFor="supervisor" className="cursor-pointer">
+                          Supervisor
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Pode acompanhar equipes e clientes designados.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border p-3">
+                      <RadioGroupItem value="user" id="user" />
+                      <div>
+                        <Label htmlFor="user" className="cursor-pointer">
+                          Usuário
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Acesso restrito às atividades do próprio colaborador.
+                        </p>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+              </Card>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="supervisor"
-                    checked={formData.supervisor}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supervisor: checked as boolean })}
-                  />
-                  <Label htmlFor="supervisor" className="cursor-pointer">
-                    Supervisor
-                  </Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {userRole === "admin" && (
-            <Card className="border-primary/20">
-              <CardHeader>
-                <CardTitle>Dados Sensíveis</CardTitle>
-                <CardDescription>
-                  Visível apenas para administradores
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email_pessoal">Email Pessoal</Label>
-                  <Input
-                    id="email_pessoal"
-                    type="email"
-                    value={privateData.email_pessoal}
-                    onChange={(e) =>
-                      setPrivateData({ ...privateData, email_pessoal: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp</Label>
-                  <Input
-                    id="whatsapp"
-                    value={privateData.whatsapp}
-                    onChange={(e) =>
-                      setPrivateData({ ...privateData, whatsapp: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="data_aniversario">Data de Aniversário</Label>
-                  <Input
-                    id="data_aniversario"
-                    type="date"
-                    value={privateData.data_aniversario}
-                    onChange={(e) =>
-                      setPrivateData({ ...privateData, data_aniversario: e.target.value })
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              {userRole === "admin" && (
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle>Dados Sensíveis</CardTitle>
+                    <CardDescription>
+                      Visível apenas para administradores
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email_pessoal">Email Pessoal</Label>
+                      <Input
+                        id="email_pessoal"
+                        type="email"
+                        value={privateData.email_pessoal}
+                        onChange={(e) =>
+                          setPrivateData({
+                            ...privateData,
+                            email_pessoal: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp">WhatsApp</Label>
+                      <Input
+                        id="whatsapp"
+                        value={privateData.whatsapp}
+                        onChange={(e) =>
+                          setPrivateData({
+                            ...privateData,
+                            whatsapp: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="data_aniversario">Data de Aniversário</Label>
+                      <Input
+                        id="data_aniversario"
+                        type="date"
+                        value={privateData.data_aniversario}
+                        onChange={(e) =>
+                          setPrivateData({
+                            ...privateData,
+                            data_aniversario: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
 
           <div className="flex gap-2">
             <Button type="submit" disabled={loading} className="flex-1">
