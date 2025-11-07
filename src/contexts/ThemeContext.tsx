@@ -10,6 +10,20 @@ interface ThemeConfig {
   faviconUrl: string;
 }
 
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const adjustHslLightness = (hsl: string, delta: number) => {
+  const [hue, saturation, lightness] = hsl.split(" ");
+  const h = parseFloat(hue);
+  const s = parseFloat(saturation.replace("%", ""));
+  const l = parseFloat(lightness.replace("%", ""));
+
+  const nextLightness = clamp(l + delta, 0, 100);
+  const sanitizedLightness = Number.isFinite(nextLightness) ? nextLightness : 0;
+
+  return `${isNaN(h) ? 0 : h} ${isNaN(s) ? 0 : s}% ${sanitizedLightness}%`;
+};
+
 interface ThemeContextType extends ThemeConfig {
   setDarkMode: (value: boolean) => void;
   setPrimaryColor: (color: string) => void;
@@ -53,8 +67,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.style.setProperty("--accent", config.primaryColor);
     document.documentElement.style.setProperty("--sidebar-primary", config.primaryColor);
     document.documentElement.style.setProperty("--ring", config.primaryColor);
-    
+
     document.documentElement.style.setProperty("--secondary", config.secondaryColor);
+    document.documentElement.style.setProperty("--sidebar-background", config.primaryColor);
+    document.documentElement.style.setProperty(
+      "--sidebar-accent",
+      adjustHslLightness(config.primaryColor, 8)
+    );
+    document.documentElement.style.setProperty(
+      "--sidebar-border",
+      adjustHslLightness(config.primaryColor, -12)
+    );
+    document.documentElement.style.setProperty("--sidebar-ring", config.secondaryColor);
 
     if (config.faviconUrl) {
       const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement("link");
