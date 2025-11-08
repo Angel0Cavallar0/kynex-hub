@@ -489,19 +489,18 @@ export default function ColaboradorDetalhes() {
               </CardHeader>
               <CardContent className="flex flex-col gap-6 lg:flex-row">
                 <div className="flex w-full max-w-[180px] flex-col items-center gap-4">
-                  <div
-                    className="flex h-36 w-36 items-center justify-center rounded-full bg-emerald-800 text-lg font-semibold uppercase tracking-wide text-white"
-                    style={
-                      photoPreview
-                        ? {
-                            backgroundImage: `url(${photoPreview})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : undefined
-                    }
-                  >
-                    {!photoPreview && "foto"}
+                  <div className="h-36 w-36">
+                    {photoPreview ? (
+                      <img
+                        src={photoPreview}
+                        alt={`Foto de ${colaborador.nome}`}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-800 text-lg font-semibold uppercase tracking-wide text-white">
+                        foto
+                      </div>
+                    )}
                   </div>
                   <div>
                     <input
