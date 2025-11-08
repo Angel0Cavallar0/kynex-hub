@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import camaleonLogo from "@/assets/camaleon-logo.svg";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -22,7 +20,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showUserNotFoundModal, setShowUserNotFoundModal] = useState(false);
   const { signIn } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,11 +28,24 @@ export default function Login() {
     try {
       await signIn(email, password);
       toast.success("Login realizado com sucesso!");
-    } catch (error: any) {
-      const message = error?.message || "Erro ao fazer login";
+    } catch (error: unknown) {
+      const { message, status } =
+        error && typeof error === "object"
+          ? {
+              message:
+                "message" in error && typeof (error as { message: unknown }).message === "string"
+                  ? (error as { message: string }).message
+                  : "Erro ao fazer login",
+              status:
+                "status" in error && typeof (error as { status?: unknown }).status === "number"
+                  ? (error as { status?: number }).status
+                  : undefined,
+            }
+          : { message: "Erro ao fazer login", status: undefined };
+
       const normalizedMessage = message.toLowerCase();
       const shouldShowUserNotFoundModal =
-        error?.status === 400 ||
+        status === 400 ||
         normalizedMessage.includes("invalid login credentials") ||
         normalizedMessage.includes("invalid email or password");
 
@@ -54,15 +64,14 @@ export default function Login() {
       className="relative flex min-h-screen items-center justify-center px-4"
       style={{
         background:
-          "radial-gradient(circle at center, rgba(13,148,136,0.45) 0%, rgba(12,74,110,0.85) 45%, rgba(2,6,23,0.95) 100%)",
+          "radial-gradient(circle at center, rgba(10,58,66,0.6) 0%, rgba(8,13,29,0.92) 50%, rgba(8,13,29,1) 100%)",
       }}
     >
-      <div className="absolute inset-0 bg-black/40" aria-hidden />
-      <Card className="relative w-full max-w-md border-white/10 bg-white/10 text-white shadow-xl backdrop-blur-xl">
+      <Card className="relative w-full max-w-md border-white/10 bg-zinc-900/60 text-white shadow-xl backdrop-blur-xl">
         <CardHeader className="space-y-5 text-center">
           <div className="flex justify-center">
             <img
-              src={camaleonLogo}
+              src="https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/sign/imagens/logos_camaleon/logo_branca_transp.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV82NTBmMzk1MS1iNzJkLTQ2ZTktOTc1Ni02Y2UzNjdjYzk4MDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZW5zL2xvZ29zX2NhbWFsZW9uL2xvZ29fYnJhbmNhX3RyYW5zcC5wbmciLCJpYXQiOjE3NjI2MTQ0MzksImV4cCI6MTgyNTY4NjQzOX0.JEF1atH4IYND6wx8es538bhYFLPQXqzV4g5ZSvCJPOM"
               alt="Logo Camaleon"
               className="h-12 w-auto drop-shadow-lg"
             />
