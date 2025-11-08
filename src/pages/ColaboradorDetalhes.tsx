@@ -70,7 +70,6 @@ export default function ColaboradorDetalhes() {
     telefone_pessoal: string;
     email_pessoal: string;
     contato_emergencia_nome: string;
-    contato_emergencia_grau: string;
     contato_emergencia_telefone: string;
   };
 
@@ -202,7 +201,6 @@ export default function ColaboradorDetalhes() {
 
     const emergencyValue = supabaseData.contato_emergencia;
     let emergencyName = "";
-    let emergencyGrau = "";
     let emergencyPhone = "";
 
     if (typeof emergencyValue === "string" && emergencyValue) {
@@ -212,7 +210,6 @@ export default function ColaboradorDetalhes() {
           | undefined;
         if (parsed) {
           emergencyName = parsed.nome?.toString() || "";
-          emergencyGrau = parsed.grau?.toString() || "";
           emergencyPhone = parsed.telefone?.toString() || "";
         }
       } catch (error) {
@@ -223,7 +220,6 @@ export default function ColaboradorDetalhes() {
     } else if (emergencyValue && typeof emergencyValue === "object") {
       const parsed = emergencyValue as { nome?: string; grau?: string; telefone?: string };
       emergencyName = parsed.nome?.toString() || "";
-      emergencyGrau = parsed.grau?.toString() || "";
       emergencyPhone = parsed.telefone?.toString() || "";
     }
 
@@ -235,7 +231,6 @@ export default function ColaboradorDetalhes() {
       telefone_pessoal: supabaseData.telefone_pessoal || "",
       email_pessoal: supabaseData.email_pessoal || "",
       contato_emergencia_nome: emergencyName,
-      contato_emergencia_grau: emergencyGrau,
       contato_emergencia_telefone: emergencyPhone,
     });
   };
@@ -288,10 +283,9 @@ export default function ColaboradorDetalhes() {
 
       if (userRole === "admin" && privateData) {
         const emergencyPayload =
-          privateData.contato_emergencia_nome || privateData.contato_emergencia_grau || privateData.contato_emergencia_telefone
+          privateData.contato_emergencia_nome || privateData.contato_emergencia_telefone
             ? JSON.stringify({
                 nome: privateData.contato_emergencia_nome,
-                grau: privateData.contato_emergencia_grau,
                 telefone: privateData.contato_emergencia_telefone,
               })
             : null;
@@ -647,57 +641,44 @@ export default function ColaboradorDetalhes() {
                           }
                         />
                       </div>
-                      <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="contato_emergencia_nome">Nome do Contato de Emergência</Label>
-                          <Input
-                            id="contato_emergencia_nome"
-                            value={privateData.contato_emergencia_nome}
-                            placeholder="Ex: Marcia"
-                            className={inputSurfaceClasses}
-                            onChange={(e) =>
-                              setPrivateData({
-                                ...privateData,
-                                contato_emergencia_nome: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contato_emergencia_grau">Grau de Parentesco</Label>
-                          <Input
-                            id="contato_emergencia_grau"
-                            value={privateData.contato_emergencia_grau}
-                            placeholder="Ex: Mãe"
-                            className={inputSurfaceClasses}
-                            onChange={(e) =>
-                              setPrivateData({
-                                ...privateData,
-                                contato_emergencia_grau: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contato_emergencia_telefone">Telefone</Label>
-                          <PhoneInput
-                            value={privateData.contato_emergencia_telefone}
-                            onChange={(value) =>
-                              setPrivateData({
-                                ...privateData,
-                                contato_emergencia_telefone: value,
-                              })
-                            }
-                            className={inputSurfaceClasses}
-                          />
-                        </div>
-                        {privateData.contato_emergencia_nome && privateData.contato_emergencia_grau && (
-                          <div className="md:col-span-3">
-                            <p className="text-sm text-muted-foreground">
-                              Exibição: {privateData.contato_emergencia_nome} - {privateData.contato_emergencia_grau}
-                              {privateData.contato_emergencia_telefone && ` • ${formatPhoneDisplay(privateData.contato_emergencia_telefone)}`}
-                            </p>
+                      <div className="md:col-span-2 space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground">Contatos de emergência</p>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="contato_emergencia_nome">Nome</Label>
+                            <Input
+                              id="contato_emergencia_nome"
+                              value={privateData.contato_emergencia_nome}
+                              placeholder="Ex: Marcia"
+                              className={inputSurfaceClasses}
+                              onChange={(e) =>
+                                setPrivateData({
+                                  ...privateData,
+                                  contato_emergencia_nome: e.target.value,
+                                })
+                              }
+                            />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contato_emergencia_telefone">Telefone</Label>
+                            <PhoneInput
+                              value={privateData.contato_emergencia_telefone}
+                              onChange={(value) =>
+                                setPrivateData({
+                                  ...privateData,
+                                  contato_emergencia_telefone: value,
+                                })
+                              }
+                              className={inputSurfaceClasses}
+                            />
+                          </div>
+                        </div>
+                        {(privateData.contato_emergencia_nome || privateData.contato_emergencia_telefone) && (
+                          <p className="text-sm text-muted-foreground">
+                            Exibição: {privateData.contato_emergencia_nome || "Não informado"}
+                            {privateData.contato_emergencia_telefone &&
+                              ` • ${formatPhoneDisplay(privateData.contato_emergencia_telefone)}`}
+                          </p>
                         )}
                       </div>
                     </div>
