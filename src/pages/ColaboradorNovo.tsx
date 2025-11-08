@@ -41,7 +41,6 @@ export default function ColaboradorNovo() {
     telefone_pessoal: "",
     data_aniversario: "",
     contato_emergencia_nome: "",
-    contato_emergencia_grau: "",
     contato_emergencia_telefone: "",
   });
 
@@ -66,14 +65,24 @@ export default function ColaboradorNovo() {
 
       if (colaboradorError) throw colaboradorError;
 
-      if (userRole === "admin" && (privateData.email_pessoal || privateData.telefone_pessoal || privateData.data_aniversario || privateData.cpf || privateData.rg || privateData.endereco || privateData.contato_emergencia_nome)) {
-        const emergencyContact = privateData.contato_emergencia_nome || privateData.contato_emergencia_grau || privateData.contato_emergencia_telefone
-          ? JSON.stringify({
-              nome: privateData.contato_emergencia_nome,
-              grau: privateData.contato_emergencia_grau,
-              telefone: privateData.contato_emergencia_telefone,
-            })
-          : null;
+      if (
+        userRole === "admin" &&
+        (privateData.email_pessoal ||
+          privateData.telefone_pessoal ||
+          privateData.data_aniversario ||
+          privateData.cpf ||
+          privateData.rg ||
+          privateData.endereco ||
+          privateData.contato_emergencia_nome ||
+          privateData.contato_emergencia_telefone)
+      ) {
+        const emergencyContact =
+          privateData.contato_emergencia_nome || privateData.contato_emergencia_telefone
+            ? JSON.stringify({
+                nome: privateData.contato_emergencia_nome,
+                telefone: privateData.contato_emergencia_telefone,
+              })
+            : null;
 
         const { error: privateError } = await supabase
           .from("colaborador_private")
@@ -419,8 +428,8 @@ export default function ColaboradorNovo() {
                       />
                     </div>
                     <div className="border-t pt-4 mt-4">
-                      <h4 className="font-semibold mb-4">Contato de Emergência</h4>
-                      <div className="grid gap-4 md:grid-cols-3">
+                      <h4 className="font-semibold mb-4">Contatos de emergência</h4>
+                      <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="contato_emergencia_nome">Nome</Label>
                           <Input
@@ -431,20 +440,6 @@ export default function ColaboradorNovo() {
                               setPrivateData({
                                 ...privateData,
                                 contato_emergencia_nome: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contato_emergencia_grau">Grau de Parentesco</Label>
-                          <Input
-                            id="contato_emergencia_grau"
-                            placeholder="Ex: Mãe"
-                            value={privateData.contato_emergencia_grau}
-                            onChange={(e) =>
-                              setPrivateData({
-                                ...privateData,
-                                contato_emergencia_grau: e.target.value,
                               })
                             }
                           />
