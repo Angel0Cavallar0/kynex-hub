@@ -43,11 +43,11 @@ export default function ColaboradorDetalhes() {
     | "admin"
     | "supervisor"
   >;
-  type PrivateSupabaseData = Pick<
-    ColaboradorPrivate,
-    "email_pessoal" | "whatsapp" | "data_aniversario"
-  > &
-    Partial<ColaboradorPrivate>;
+  type PrivateSupabaseData =
+    Pick<ColaboradorPrivate, "email_pessoal" | "whatsapp" | "data_aniversario"> &
+    Partial<ColaboradorPrivate> & {
+      contato_emergencia?: string | Record<string, string> | null;
+    };
 
   type PrivateData = {
     cpf: string;
@@ -56,7 +56,8 @@ export default function ColaboradorDetalhes() {
     endereco_residencial: string;
     telefone_pessoal: string;
     email_pessoal: string;
-    contato_emergencia: string;
+    contato_emergencia_nome: string;
+    contato_emergencia_telefone: string;
   };
 
   const [colaborador, setColaborador] = useState<EditableColaborador | null>(null);
@@ -66,6 +67,7 @@ export default function ColaboradorDetalhes() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [sensitiveVisible, setSensitiveVisible] = useState(true);
+  const [availablePrivateFields, setAvailablePrivateFields] = useState<string[]>([]);
 
   const statusOptions = [
     {
@@ -102,6 +104,13 @@ export default function ColaboradorDetalhes() {
       description: "Acesso restrito às atividades do próprio colaborador.",
     },
   ];
+
+  const cardSurfaceClasses =
+    "rounded-xl border border-black/30 bg-white/90 shadow-md transition-colors dark:border-white/20 dark:bg-slate-900/70";
+  const inputSurfaceClasses =
+    "rounded-lg border border-black/10 bg-muted dark:border-white/15 dark:bg-slate-900/60";
+  const selectTriggerClasses =
+    "min-w-[260px] sm:min-w-[300px] h-12 rounded-lg border border-black/20 bg-white/80 text-left dark:border-white/20 dark:bg-slate-900/60";
 
   useEffect(() => {
     if (id) {
@@ -156,7 +165,7 @@ export default function ColaboradorDetalhes() {
   const fetchPrivateData = async () => {
     const { data, error } = await supabase
       .from("colaborador_private")
-      .select("email_pessoal, whatsapp, data_aniversario")
+      .select("*")
       .eq("id_colaborador", id)
       .maybeSingle();
 
@@ -166,6 +175,31 @@ export default function ColaboradorDetalhes() {
     }
 
     const supabaseData = (data || {}) as PrivateSupabaseData;
+    setAvailablePrivateFields(Object.keys(supabaseData || {}));
+
+    const emergencyValue = supabaseData.contato_emergencia;
+    let emergencyName = "";
+    let emergencyPhone = "";
+
+    if (typeof emergencyValue === "string" && emergencyValue) {
+      try {
+        const parsed = JSON.parse(emergencyValue) as
+          | { nome?: string; telefone?: string }
+          | undefined;
+        if (parsed) {
+          emergencyName = parsed.nome?.toString() || "";
+          emergencyPhone = parsed.telefone?.toString() || "";
+        }
+      } catch (error) {
+        const [namePart, phonePart] = emergencyValue.split("|").map((part) => part.trim());
+        emergencyName = namePart || emergencyValue;
+        emergencyPhone = phonePart || "";
+      }
+    } else if (emergencyValue && typeof emergencyValue === "object") {
+      const parsed = emergencyValue as { nome?: string; telefone?: string };
+      emergencyName = parsed.nome?.toString() || "";
+      emergencyPhone = parsed.telefone?.toString() || "";
+    }
 
     setPrivateData({
       cpf: (supabaseData.cpf as string) || "",
@@ -174,7 +208,8 @@ export default function ColaboradorDetalhes() {
       endereco_residencial: (supabaseData.endereco as string) || "",
       telefone_pessoal: supabaseData.whatsapp || "",
       email_pessoal: supabaseData.email_pessoal || "",
-      contato_emergencia: (supabaseData.contato_emergencia as string) || "",
+      contato_emergencia_nome: emergencyName,
+      contato_emergencia_telefone: emergencyPhone,
     });
   };
 
@@ -218,13 +253,41 @@ export default function ColaboradorDetalhes() {
       if (colaboradorError) throw colaboradorError;
 
       if (userRole === "admin" && privateData) {
+        const emergencyPayload =
+          privateData.contato_emergencia_nome || privateData.contato_emergencia_telefone
+            ? JSON.stringify({
+                nome: privateData.contato_emergencia_nome,
+                telefone: privateData.contato_emergencia_telefone,
+              })
+            : null;
+
+        const privatePayload: Record<string, string | null> & {
+          contato_emergencia?: string | null;
+        } = {
+          id_colaborador: id,
+          email_pessoal: privateData.email_pessoal || null,
+          whatsapp: privateData.telefone_pessoal || null,
+          data_aniversario: privateData.data_nascimento || null,
+        };
+
+        if (availablePrivateFields.includes("contato_emergencia")) {
+          privatePayload.contato_emergencia = emergencyPayload;
+        }
+
+        if (availablePrivateFields.includes("cpf")) {
+          privatePayload.cpf = privateData.cpf || null;
+        }
+        if (availablePrivateFields.includes("rg")) {
+          privatePayload.rg = privateData.rg || null;
+        }
+        if (availablePrivateFields.includes("endereco")) {
+          privatePayload.endereco = privateData.endereco_residencial || null;
+        }
+
         const { error: privateError } = await supabase
           .from("colaborador_private")
-          .upsert({
-            id_colaborador: id,
-            email_pessoal: privateData.email_pessoal || null,
-            whatsapp: privateData.telefone_pessoal || null,
-            data_aniversario: privateData.data_nascimento || null,
+          .upsert(privatePayload as Database["public"]["Tables"]["colaborador_private"]["Insert"] & {
+            contato_emergencia?: string | null;
           });
 
         if (privateError) {
@@ -281,7 +344,7 @@ export default function ColaboradorDetalhes() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card className="order-1 border border-black/40 rounded-xl">
+            <Card className={`order-1 ${cardSurfaceClasses}`}>
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-foreground">
                   Informações Principais
@@ -334,7 +397,7 @@ export default function ColaboradorDetalhes() {
                       id="nome"
                       required
                       value={colaborador.nome || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({ ...colaborador, nome: e.target.value })
                       }
@@ -345,7 +408,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="sobrenome"
                       value={colaborador.sobrenome || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({
                           ...colaborador,
@@ -359,7 +422,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="apelido"
                       value={colaborador.apelido || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({ ...colaborador, apelido: e.target.value })
                       }
@@ -370,7 +433,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="id_colaborador"
                       value={colaborador.id_colaborador || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       readOnly
                     />
                   </div>
@@ -379,7 +442,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="cargo"
                       value={colaborador.cargo || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({ ...colaborador, cargo: e.target.value })
                       }
@@ -391,7 +454,7 @@ export default function ColaboradorDetalhes() {
                       id="data_admissao"
                       type="date"
                       value={colaborador.data_admissao || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({
                           ...colaborador,
@@ -406,7 +469,7 @@ export default function ColaboradorDetalhes() {
                       id="email_corporativo"
                       type="email"
                       value={colaborador.email_corporativo || ""}
-                      className="rounded-lg bg-muted md:max-w-xl"
+                      className={`md:max-w-xl ${inputSurfaceClasses}`}
                       onChange={(e) =>
                         setColaborador({
                           ...colaborador,
@@ -420,7 +483,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="id_clickup"
                       value={colaborador.id_clickup || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({ ...colaborador, id_clickup: e.target.value })
                       }
@@ -431,7 +494,7 @@ export default function ColaboradorDetalhes() {
                     <Input
                       id="id_slack"
                       value={colaborador.id_slack || ""}
-                      className="rounded-lg bg-muted"
+                      className={inputSurfaceClasses}
                       onChange={(e) =>
                         setColaborador({ ...colaborador, id_slack: e.target.value })
                       }
@@ -442,7 +505,7 @@ export default function ColaboradorDetalhes() {
             </Card>
 
             {userRole === "admin" && privateData ? (
-              <Card className="order-2 border border-black/40 rounded-xl">
+              <Card className={`order-2 ${cardSurfaceClasses}`}>
                 <CardHeader className="flex items-start justify-between gap-4 pb-4">
                   <div>
                     <CardTitle className="text-xl font-semibold text-foreground">
@@ -469,7 +532,7 @@ export default function ColaboradorDetalhes() {
                         <Input
                           id="cpf"
                           value={privateData.cpf}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -483,7 +546,7 @@ export default function ColaboradorDetalhes() {
                         <Input
                           id="rg"
                           value={privateData.rg}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -498,7 +561,7 @@ export default function ColaboradorDetalhes() {
                           id="data_nascimento"
                           type="date"
                           value={privateData.data_nascimento}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -507,12 +570,12 @@ export default function ColaboradorDetalhes() {
                           }
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="endereco_residencial">Endereço Residencial</Label>
                         <Input
                           id="endereco_residencial"
                           value={privateData.endereco_residencial}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -526,7 +589,7 @@ export default function ColaboradorDetalhes() {
                         <Input
                           id="telefone_pessoal"
                           value={privateData.telefone_pessoal}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -541,7 +604,7 @@ export default function ColaboradorDetalhes() {
                           id="email_pessoal"
                           type="email"
                           value={privateData.email_pessoal}
-                          className="rounded-lg bg-muted"
+                          className={inputSurfaceClasses}
                           onChange={(e) =>
                             setPrivateData({
                               ...privateData,
@@ -550,23 +613,39 @@ export default function ColaboradorDetalhes() {
                           }
                         />
                       </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="contato_emergencia">Contato de Emergência</Label>
-                        <Input
-                          id="contato_emergencia"
-                          value={privateData.contato_emergencia}
-                          className="rounded-lg bg-muted"
-                          onChange={(e) =>
-                            setPrivateData({
-                              ...privateData,
-                              contato_emergencia: e.target.value,
-                            })
-                          }
-                        />
+                      <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="contato_emergencia_nome">Nome do Contato de Emergência</Label>
+                          <Input
+                            id="contato_emergencia_nome"
+                            value={privateData.contato_emergencia_nome}
+                            className={inputSurfaceClasses}
+                            onChange={(e) =>
+                              setPrivateData({
+                                ...privateData,
+                                contato_emergencia_nome: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="contato_emergencia_telefone">Telefone do Contato de Emergência</Label>
+                          <Input
+                            id="contato_emergencia_telefone"
+                            value={privateData.contato_emergencia_telefone}
+                            className={inputSurfaceClasses}
+                            onChange={(e) =>
+                              setPrivateData({
+                                ...privateData,
+                                contato_emergencia_telefone: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-lg border border-dashed border-muted-foreground/40 p-6 text-center text-sm text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-white/70 p-6 text-center text-sm text-muted-foreground dark:bg-slate-900/60">
                       Os dados sensíveis estão ocultos. Clique em "visível" para exibir novamente.
                     </div>
                   )}
@@ -576,7 +655,7 @@ export default function ColaboradorDetalhes() {
               <div className="order-2 hidden xl:block" />
             )}
 
-            <Card className="order-3">
+            <Card className={`order-3 ${cardSurfaceClasses}`}>
               <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
                 <div className="flex flex-col">
                   <CardTitle className="text-lg">Status do Colaborador</CardTitle>
@@ -597,7 +676,7 @@ export default function ColaboradorDetalhes() {
                 >
                   <SelectTrigger
                     aria-label="Selecione o status do colaborador"
-                    className="min-w-[260px] sm:min-w-[300px]"
+                    className={selectTriggerClasses}
                   >
                     <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
@@ -617,7 +696,7 @@ export default function ColaboradorDetalhes() {
               </CardHeader>
             </Card>
 
-            <Card className="order-4">
+            <Card className={`order-4 ${cardSurfaceClasses}`}>
               <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
                 <div className="flex flex-col">
                   <CardTitle className="text-lg">Acesso e Permissões</CardTitle>
@@ -636,7 +715,7 @@ export default function ColaboradorDetalhes() {
                 >
                   <SelectTrigger
                     aria-label="Selecione o nível de acesso"
-                    className="min-w-[260px] sm:min-w-[300px]"
+                    className={selectTriggerClasses}
                   >
                     <SelectValue placeholder="Selecione um nível de acesso" />
                   </SelectTrigger>
