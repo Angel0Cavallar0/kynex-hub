@@ -130,7 +130,7 @@ export default function ClickupResponsaveis() {
 
   return (
     <Layout>
-      <div className="space-y-6 w-full max-w-6xl mx-auto">
+      <div className="space-y-6 w-full max-w-5xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">Responsáveis ClickUp</h1>
@@ -163,7 +163,7 @@ export default function ClickupResponsaveis() {
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="w-full">
           <Card className="w-full max-w-5xl border border-border/60 bg-card/60 backdrop-blur">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">Funções e Responsáveis</CardTitle>
