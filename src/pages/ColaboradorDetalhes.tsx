@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -50,8 +49,27 @@ export default function ColaboradorDetalhes() {
   const [colaborador, setColaborador] = useState<EditableColaborador | null>(null);
   const [privateData, setPrivateData] = useState<PrivateData | null>(null);
   const [role, setRole] = useState<"user" | "supervisor" | "admin">("user");
+  const [status, setStatus] = useState<"ativo" | "ferias" | "afastado">("ativo");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const statusOptions = [
+    {
+      value: "ativo" as const,
+      label: "Ativo",
+      description: "Colaborador trabalhando normalmente.",
+    },
+    {
+      value: "ferias" as const,
+      label: "Em Férias",
+      description: "Colaborador em período de férias.",
+    },
+    {
+      value: "afastado" as const,
+      label: "Afastado",
+      description: "Colaborador afastado temporariamente.",
+    },
+  ];
 
   const roleOptions = [
     {
@@ -111,6 +129,13 @@ export default function ColaboradorDetalhes() {
       const colaboradorData = data as EditableColaborador;
       setColaborador(colaboradorData);
       setRole(colaboradorData.admin ? "admin" : colaboradorData.supervisor ? "supervisor" : "user");
+      setStatus(
+        colaboradorData.colab_ferias
+          ? "ferias"
+          : colaboradorData.colab_afastado
+          ? "afastado"
+          : "ativo"
+      );
     }
   };
 
@@ -241,14 +266,13 @@ export default function ColaboradorDetalhes() {
             </Button>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.8fr,1.2fr]">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informações Principais</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card className="order-1">
+              <CardHeader>
+                <CardTitle>Informações Principais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
                     <Label htmlFor="foto_colaborador">Foto do Colaborador</Label>
                     <div className="flex items-center gap-4">
                       <Avatar className="h-20 w-20 border border-muted bg-muted/40">
@@ -381,145 +405,131 @@ export default function ColaboradorDetalhes() {
                 </CardContent>
               </Card>
 
-              <Card>
+            {userRole === "admin" && privateData ? (
+              <Card className="order-2 border-primary/20">
                 <CardHeader>
-                  <CardTitle>Status do Colaborador</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="colab_ativo">Colaborador Ativo</Label>
-                    <Switch
-                      id="colab_ativo"
-                      checked={colaborador.colab_ativo}
-                      onCheckedChange={(checked) =>
-                        setColaborador({ ...colaborador, colab_ativo: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="colab_ferias">Em Férias</Label>
-                    <Switch
-                      id="colab_ferias"
-                      checked={colaborador.colab_ferias}
-                      onCheckedChange={(checked) =>
-                        setColaborador({ ...colaborador, colab_ferias: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="colab_afastado">Afastado</Label>
-                    <Switch
-                      id="colab_afastado"
-                      checked={colaborador.colab_afastado}
-                      onCheckedChange={(checked) =>
-                        setColaborador({ ...colaborador, colab_afastado: checked })
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex h-full flex-col gap-6">
-              {userRole === "admin" && privateData && (
-                <Card className="border-primary/20">
-                  <CardHeader>
-                    <CardTitle>Dados Sensíveis</CardTitle>
-                    <CardDescription>
-                      Visível apenas para administradores
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email_pessoal">Email Pessoal</Label>
-                      <Input
-                        id="email_pessoal"
-                        type="email"
-                        value={privateData.email_pessoal || ""}
-                        onChange={(e) =>
-                          setPrivateData({
-                            ...privateData,
-                            email_pessoal: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp">WhatsApp</Label>
-                      <Input
-                        id="whatsapp"
-                        value={privateData.whatsapp || ""}
-                        onChange={(e) =>
-                          setPrivateData({
-                            ...privateData,
-                            whatsapp: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="data_aniversario">Data de Aniversário</Label>
-                      <Input
-                        id="data_aniversario"
-                        type="date"
-                        value={privateData.data_aniversario || ""}
-                        onChange={(e) =>
-                          setPrivateData({
-                            ...privateData,
-                            data_aniversario: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card className="mt-auto">
-                <CardHeader>
-                  <CardTitle>Acesso e Permissões</CardTitle>
-                  <CardDescription>
-                    Defina o nível de acesso do colaborador
-                  </CardDescription>
+                  <CardTitle>Dados Sensíveis</CardTitle>
+                  <CardDescription>Visível apenas para administradores</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Select
-                    value={role}
-                    onValueChange={(value) => {
-                      setRole(value as "user" | "supervisor" | "admin");
-                      setColaborador({
-                        ...colaborador,
-                        admin: value === "admin",
-                        supervisor: value === "supervisor",
-                      });
-                    }}
-                  >
-                    <SelectTrigger aria-label="Selecione o nível de acesso">
-                      <SelectValue placeholder="Selecione um nível de acesso" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roleOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">{option.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {option.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
-                    {
-                      roleOptions.find((option) => option.value === role)?.description ||
-                        "Selecione um nível de acesso para ver a descrição."
-                    }
+                  <div className="space-y-2">
+                    <Label htmlFor="email_pessoal">Email Pessoal</Label>
+                    <Input
+                      id="email_pessoal"
+                      type="email"
+                      value={privateData.email_pessoal || ""}
+                      onChange={(e) =>
+                        setPrivateData({
+                          ...privateData,
+                          email_pessoal: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <Input
+                      id="whatsapp"
+                      value={privateData.whatsapp || ""}
+                      onChange={(e) =>
+                        setPrivateData({
+                          ...privateData,
+                          whatsapp: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="data_aniversario">Data de Aniversário</Label>
+                    <Input
+                      id="data_aniversario"
+                      type="date"
+                      value={privateData.data_aniversario || ""}
+                      onChange={(e) =>
+                        setPrivateData({
+                          ...privateData,
+                          data_aniversario: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            ) : (
+              <div className="order-2 hidden xl:block" />
+            )}
+
+            <Card className="order-3">
+              <CardHeader>
+                <CardTitle>Status do Colaborador</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Select
+                  value={status}
+                  onValueChange={(value) => {
+                    const selectedStatus = value as "ativo" | "ferias" | "afastado";
+                    setStatus(selectedStatus);
+                    setColaborador({
+                      ...colaborador,
+                      colab_ativo: selectedStatus === "ativo",
+                      colab_ferias: selectedStatus === "ferias",
+                      colab_afastado: selectedStatus === "afastado",
+                    });
+                  }}
+                >
+                  <SelectTrigger aria-label="Selecione o status do colaborador">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card className="order-4">
+              <CardHeader>
+                <CardTitle>Acesso e Permissões</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Select
+                  value={role}
+                  onValueChange={(value) => {
+                    setRole(value as "user" | "supervisor" | "admin");
+                    setColaborador({
+                      ...colaborador,
+                      admin: value === "admin",
+                      supervisor: value === "supervisor",
+                    });
+                  }}
+                >
+                  <SelectTrigger aria-label="Selecione o nível de acesso">
+                    <SelectValue placeholder="Selecione um nível de acesso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
           </div>
         </form>
       </div>
