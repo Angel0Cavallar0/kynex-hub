@@ -20,6 +20,7 @@ import ClickupResponsaveis from "./pages/clickup/Responsaveis";
 import ClickupTarefas from "./pages/clickup/Tarefas";
 import ClickupPastas from "./pages/clickup/Pastas";
 import ClickupListas from "./pages/clickup/Listas";
+import Whatsapp from "./pages/Whatsapp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ClickupListas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/whatsapp"
+                element={
+                  <ProtectedRoute>
+                    <Whatsapp />
                   </ProtectedRoute>
                 }
               />

@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Users, UserCog, MousePointerClick, LogOut, Settings } from "lucide-react";
+import { FileText, LayoutDashboard, Users, UserCog, MousePointerClick, LogOut, Settings, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,6 +8,7 @@ import { useLocation } from "react-router-dom";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: MessageCircle, label: "WhatsApp", path: "/whatsapp" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: UserCog, label: "Colaboradores", path: "/colaboradores" },
   {
