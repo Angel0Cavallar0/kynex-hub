@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -95,10 +95,17 @@ export default function ColaboradorDetalhes() {
     | "admin"
     | "supervisor"
     | "foto_url"
+    | "user_id"
   >;
   type PrivateSupabaseData = Partial<ColaboradorPrivate> & {
     contato_emergencia?: string | Record<string, string> | null;
     telefone_pessoal?: string | null;
+  };
+
+  type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"] & {
+    wpp_acess?: boolean | null;
+    crm_acess?: boolean | null;
+    crm_level_acess?: string[] | string | null;
   };
 
   type PrivateData = {
@@ -121,6 +128,11 @@ export default function ColaboradorDetalhes() {
   const [sensitiveVisible, setSensitiveVisible] = useState(false);
   const [availablePrivateFields, setAvailablePrivateFields] = useState<string[]>([]);
   const [showDesligadoDialog, setShowDesligadoDialog] = useState(false);
+  const [userRolesRecordId, setUserRolesRecordId] = useState<string | null>(null);
+  const [wppAccess, setWppAccess] = useState<boolean | null>(null);
+  const [crmAccess, setCrmAccess] = useState<boolean | null>(null);
+  const [crmAccessLevels, setCrmAccessLevels] = useState<string[]>([]);
+  const [crmLevelsInput, setCrmLevelsInput] = useState("");
 
   const statusOptions = [
     {
@@ -170,6 +182,99 @@ export default function ColaboradorDetalhes() {
   const selectTriggerClasses =
     "min-w-[260px] sm:min-w-[300px] h-12 rounded-lg border border-black/20 bg-white/80 text-left dark:border-white/20 dark:bg-slate-900/60";
 
+  const resetUserRoleStates = () => {
+    setUserRolesRecordId(null);
+    setWppAccess(null);
+    setCrmAccess(null);
+    setCrmAccessLevels([]);
+    setCrmLevelsInput("");
+  };
+
+  const normalizeCrmLevels = (value: string[] | string | null | undefined) => {
+    if (!value) {
+      return [] as string[];
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((level) => (typeof level === "string" ? level.trim() : ""))
+        .filter((level) => level.length > 0);
+    }
+
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((level) => (typeof level === "string" ? level.trim() : ""))
+            .filter((level) => level.length > 0);
+        }
+      } catch {
+        return value
+          .split(/[,|]/)
+          .map((level) => level.trim())
+          .filter((level) => level.length > 0);
+      }
+
+      return value.trim().length > 0 ? [value.trim()] : [];
+    }
+
+    return [] as string[];
+  };
+
+  const fetchUserRolePermissions = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("id, role, wpp_acess, crm_acess, crm_level_acess")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      await logger.warning(
+        "Erro ao buscar permissões de acesso do colaborador",
+        "COLAB_PERMISSIONS_FETCH_ERROR",
+        buildErrorContext(error, {
+          colaboradorId: id,
+          userId,
+        })
+      );
+      resetUserRoleStates();
+      return;
+    }
+
+    if (!data) {
+      resetUserRoleStates();
+      return;
+    }
+
+    const roleRow = data as UserRoleRow;
+    setUserRolesRecordId(roleRow.id ?? null);
+    if (roleRow.role) {
+      setRole(roleRow.role as "admin" | "supervisor" | "user");
+      setColaborador((current) =>
+        current
+          ? {
+              ...current,
+              admin: roleRow.role === "admin",
+              supervisor: roleRow.role === "supervisor",
+            }
+          : current
+      );
+    }
+
+    const normalizedWppAccess =
+      typeof roleRow.wpp_acess === "boolean" ? roleRow.wpp_acess : null;
+    const normalizedCrmAccess =
+      typeof roleRow.crm_acess === "boolean" ? roleRow.crm_acess : null;
+
+    setWppAccess(normalizedWppAccess);
+    setCrmAccess(normalizedCrmAccess);
+
+    const normalizedLevels = normalizeCrmLevels(roleRow.crm_level_acess);
+    setCrmAccessLevels(normalizedLevels);
+    setCrmLevelsInput(normalizedLevels.join(", "));
+  };
+
   useEffect(() => {
     if (id) {
       fetchColaborador();
@@ -218,6 +323,11 @@ export default function ColaboradorDetalhes() {
       );
       if (colaboradorData.foto_url) {
         setPhotoPreview(colaboradorData.foto_url);
+      }
+      if (colaboradorData.user_id) {
+        await fetchUserRolePermissions(colaboradorData.user_id);
+      } else {
+        resetUserRoleStates();
       }
     }
   };
@@ -287,7 +397,7 @@ export default function ColaboradorDetalhes() {
     });
   };
 
-  const handleUpdateColaborador = async (e: React.FormEvent) => {
+  const handleUpdateColaborador = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -425,6 +535,57 @@ export default function ColaboradorDetalhes() {
         }
       }
 
+      if (colaborador.user_id) {
+        const normalizedLevels = crmAccessLevels
+          .map((level) => level.trim())
+          .filter((level) => level.length > 0);
+
+        const permissionsPayload: Partial<UserRoleRow> & {
+          user_id: string;
+          role: "admin" | "supervisor" | "user";
+        } = {
+          user_id: colaborador.user_id,
+          role,
+          wpp_acess: typeof wppAccess === "boolean" ? wppAccess : null,
+          crm_acess: typeof crmAccess === "boolean" ? crmAccess : null,
+          crm_level_acess:
+            crmAccess && normalizedLevels.length > 0 ? normalizedLevels : crmAccess ? [] : null,
+        };
+
+        if (userRolesRecordId) {
+          permissionsPayload.id = userRolesRecordId;
+        }
+
+        const { data: userRolesData, error: userRolesError } = await supabase
+          .from("user_roles")
+          .upsert(
+            {
+              ...permissionsPayload,
+            } as any,
+            {
+              onConflict: "user_id",
+            }
+          )
+          .select("id")
+          .maybeSingle();
+
+        if (userRolesError) {
+          throw userRolesError;
+        }
+
+        if (userRolesData?.id) {
+          setUserRolesRecordId(userRolesData.id);
+        }
+      } else {
+        await logger.warning(
+          "Colaborador sem vínculo de usuário ao atualizar permissões",
+          "COLAB_PERMISSIONS_UPDATE_SKIPPED",
+          {
+            colaboradorId: id,
+          }
+        );
+      }
+
       toast.success("Colaborador atualizado com sucesso!");
     } catch (error: any) {
       await logger.error(
@@ -435,6 +596,9 @@ export default function ColaboradorDetalhes() {
           role,
           status,
           currentColaborador: colaborador,
+          whatsappAccess: wppAccess,
+          crmAccess,
+          crmAccessLevels,
         })
       );
       toast.error(error.message || "Erro ao atualizar colaborador");
@@ -837,34 +1001,151 @@ export default function ColaboradorDetalhes() {
               <div className="order-2 hidden xl:block" />
             )}
 
-            <Card className={`order-3 ${cardSurfaceClasses}`}>
-              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
-                <div className="flex flex-col">
+            <Card className={`order-3 xl:col-span-2 ${cardSurfaceClasses}`}>
+              <CardHeader className="pb-4">
+                <div className="space-y-1">
                   <CardTitle className="text-lg">Permissões e Acessos</CardTitle>
-                  <CardDescription>Defina o nível de acesso do colaborador.</CardDescription>
+                  <CardDescription>Defina os níveis de acesso e canais liberados para o colaborador.</CardDescription>
                 </div>
-                <Select
-                  value={role}
-                  onValueChange={(value) => {
-                    const selectedRole = value as "admin" | "supervisor" | "user";
-                    setRole(selectedRole);
-                  }}
-                >
-                  <SelectTrigger className={selectTriggerClasses} aria-label="Selecione o nível de acesso">
-                    <SelectValue placeholder="Selecione o nível" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium">{option.label}</span>
-                          <span className="text-xs text-muted-foreground">{option.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nivel_acesso_sistema">Nível de acesso ao sistema</Label>
+                    <Select
+                      value={role}
+                      onValueChange={(value) => {
+                        const selectedRole = value as "admin" | "supervisor" | "user";
+                        setRole(selectedRole);
+                        setColaborador((current) =>
+                          current
+                            ? {
+                                ...current,
+                                admin: selectedRole === "admin",
+                                supervisor: selectedRole === "supervisor",
+                              }
+                            : current
+                        );
+                      }}
+                    >
+                      <SelectTrigger
+                        id="nivel_acesso_sistema"
+                        className={`${selectTriggerClasses} w-full`}
+                        aria-label="Selecione o nível de acesso ao sistema"
+                      >
+                        <SelectValue placeholder="Selecione o nível" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{option.label}</span>
+                              <span className="text-xs text-muted-foreground">{option.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="acesso_whatsapp">Acesso ao WhatsApp</Label>
+                    <Select
+                      value={
+                        wppAccess === null
+                          ? undefined
+                          : wppAccess
+                          ? "sim"
+                          : "nao"
+                      }
+                      onValueChange={(value) => {
+                        if (value === "sim") {
+                          setWppAccess(true);
+                        } else if (value === "nao") {
+                          setWppAccess(false);
+                        } else {
+                          setWppAccess(null);
+                        }
+                      }}
+                    >
+                      <SelectTrigger
+                        id="acesso_whatsapp"
+                        className={`${selectTriggerClasses} w-full`}
+                        aria-label="Defina se o colaborador tem acesso ao WhatsApp"
+                      >
+                        <SelectValue placeholder="Selecione uma opção" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="indefinido">Não definido</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="acesso_crm">Acesso ao CRM</Label>
+                    <Select
+                      value={
+                        crmAccess === null
+                          ? undefined
+                          : crmAccess
+                          ? "sim"
+                          : "nao"
+                      }
+                      onValueChange={(value) => {
+                        if (value === "sim") {
+                          setCrmAccess(true);
+                        } else if (value === "nao") {
+                          setCrmAccess(false);
+                          setCrmAccessLevels([]);
+                          setCrmLevelsInput("");
+                        } else {
+                          setCrmAccess(null);
+                          setCrmAccessLevels([]);
+                          setCrmLevelsInput("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger
+                        id="acesso_crm"
+                        className={`${selectTriggerClasses} w-full`}
+                        aria-label="Defina se o colaborador tem acesso ao CRM"
+                      >
+                        <SelectValue placeholder="Selecione uma opção" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="indefinido">Não definido</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2 xl:col-span-4">
+                    <Label htmlFor="nivel_acesso_crm">Nível de acesso CRM</Label>
+                    <Input
+                      id="nivel_acesso_crm"
+                      placeholder="Ex: Básico, Avançado"
+                      value={crmLevelsInput}
+                      className={inputSurfaceClasses}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setCrmLevelsInput(value);
+                        const normalized = value
+                          .split(/[,|]/)
+                          .map((level) => level.trim())
+                          .filter((level) => level.length > 0);
+                        setCrmAccessLevels(normalized);
+                      }}
+                      disabled={crmAccess !== true}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Separe múltiplos níveis com vírgula ou barra vertical.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </form>
