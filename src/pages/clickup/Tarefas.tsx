@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ClickupTarefas() {
   const [tarefas, setTarefas] = useState<any[]>([]);
@@ -94,10 +95,51 @@ export default function ClickupTarefas() {
     return variants[prioridade?.toLowerCase()] || "default";
   };
 
-  const isOverdue = (dataEntrega: string, status: string) => {
+  const isOverdue = (dataEntrega?: string | null, status?: string | null) => {
     if (!dataEntrega || status === "Concluído") return false;
     return new Date(dataEntrega) < new Date();
   };
+
+  const overdueTasks = filteredTarefas.filter((tarefa) =>
+    isOverdue(tarefa.data_entrega, tarefa.status)
+  );
+
+  const overdueCollaborators = Object.values(
+    overdueTasks.reduce(
+      (acc, tarefa) => {
+        const key =
+          tarefa.id_colaborador_clickup || tarefa.nome_colaborador || "sem-colaborador";
+        if (!acc[key]) {
+          acc[key] = {
+            key,
+            nome: tarefa.nome_colaborador || "Sem colaborador",
+            count: 0,
+          };
+        }
+        acc[key].count += 1;
+        return acc;
+      },
+      {} as Record<string, { key: string; nome: string; count: number }>
+    )
+  ).sort((a, b) => b.count - a.count);
+
+  const overdueClients = Object.values(
+    overdueTasks.reduce(
+      (acc, tarefa) => {
+        const key = tarefa.clienteId || tarefa.clienteNome || "sem-cliente";
+        if (!acc[key]) {
+          acc[key] = {
+            key,
+            nome: tarefa.clienteNome || "Sem cliente",
+            count: 0,
+          };
+        }
+        acc[key].count += 1;
+        return acc;
+      },
+      {} as Record<string, { key: string; nome: string; count: number }>
+    )
+  ).sort((a, b) => b.count - a.count);
 
   return (
     <Layout>
@@ -151,14 +193,80 @@ export default function ClickupTarefas() {
           </Select>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tarefas atrasadas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {overdueTasks.length ? (
+                <ul className="space-y-2 text-sm">
+                  {overdueTasks.map((tarefa) => (
+                    <li key={tarefa.id_subtask} className="flex justify-between">
+                      <span className="font-medium">{tarefa.nome_subtask}</span>
+                      <span className="text-muted-foreground">
+                        {tarefa.data_entrega
+                          ? new Date(tarefa.data_entrega).toLocaleDateString("pt-BR")
+                          : "-"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma tarefa atrasada.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Colaboradores com atrasos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {overdueCollaborators.length ? (
+                <ul className="space-y-2 text-sm">
+                  {overdueCollaborators.map((colaborador) => (
+                    <li key={colaborador.key} className="flex justify-between">
+                      <span className="font-medium">{colaborador.nome}</span>
+                      <span className="text-muted-foreground">{colaborador.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum colaborador com atrasos.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Clientes com atrasos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {overdueClients.length ? (
+                <ul className="space-y-2 text-sm">
+                  {overdueClients.map((cliente) => (
+                    <li key={cliente.key} className="flex justify-between">
+                      <span className="font-medium">{cliente.nome}</span>
+                      <span className="text-muted-foreground">{cliente.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum cliente com atrasos.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-              <TableHead>Tarefa</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Prioridade</TableHead>
+                <TableHead>Tarefa</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Prioridade</TableHead>
                 <TableHead>Colaborador</TableHead>
                 <TableHead>Lista</TableHead>
                 <TableHead>Pasta</TableHead>
