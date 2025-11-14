@@ -559,34 +559,31 @@ export type Database = {
           created_at: string | null
           crm_access?: boolean
           crm_access_level?: Database["public"]["Enums"]["crm_access_level_enum"]
-          crm_acess?: boolean
-          crm_level_acess?: Database["public"]["Enums"]["crm_access_level_enum"]
+          crm_level_access?: Database["public"]["Enums"]["crm_access_level_enum"]
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
-          wpp_acess: boolean
+          wpp_access: boolean
         }
         Insert: {
           created_at?: string | null
           crm_access?: boolean
           crm_access_level?: Database["public"]["Enums"]["crm_access_level_enum"]
-          crm_acess?: boolean
-          crm_level_acess?: Database["public"]["Enums"]["crm_access_level_enum"]
+          crm_level_access?: Database["public"]["Enums"]["crm_access_level_enum"]
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
-          wpp_acess?: boolean
+          wpp_access?: boolean
         }
         Update: {
           created_at?: string | null
           crm_access?: boolean
           crm_access_level?: Database["public"]["Enums"]["crm_access_level_enum"]
-          crm_acess?: boolean
-          crm_level_acess?: Database["public"]["Enums"]["crm_access_level_enum"]
+          crm_level_access?: Database["public"]["Enums"]["crm_access_level_enum"]
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-          wpp_acess?: boolean
+          wpp_access?: boolean
         }
         Relationships: []
       }

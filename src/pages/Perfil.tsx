@@ -45,8 +45,11 @@ type PrivateDataState = typeof emptyPrivateData;
 type ColaboradorRow = Database["public"]["Tables"]["colaborador"]["Row"];
 type ColaboradorPrivateRow = Database["public"]["Tables"]["colaborador_private"]["Row"];
 type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"] & {
+  wpp_access?: boolean | null;
   wpp_acess?: boolean | null;
+  crm_access?: boolean | null;
   crm_acess?: boolean | null;
+  crm_level_access?: string[] | string | null;
   crm_level_acess?: string[] | string | null;
 };
 
@@ -212,7 +215,7 @@ export default function Perfil() {
 
       const { data: userRolesRow, error: userRolesError } = await supabase
         .from("user_roles")
-        .select("wpp_acess, crm_access, crm_access_level")
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -222,11 +225,25 @@ export default function Perfil() {
         });
       } else {
         const roleRow = userRolesRow as UserRoleRow | null;
-        setWppAccess(roleRow?.wpp_acess ?? null);
-        setCrmAccess(roleRow?.crm_access ?? null);
+        const resolvedWppAccess =
+          typeof roleRow?.wpp_access === "boolean"
+            ? roleRow.wpp_access
+            : typeof roleRow?.wpp_acess === "boolean"
+            ? roleRow.wpp_acess
+            : null;
+        setWppAccess(resolvedWppAccess);
+
+        const resolvedCrmAccess =
+          typeof roleRow?.crm_access === "boolean"
+            ? roleRow.crm_access
+            : typeof roleRow?.crm_acess === "boolean"
+            ? roleRow.crm_acess
+            : null;
+        setCrmAccess(resolvedCrmAccess);
 
         const normalizedCrmLevels = (() => {
-          const rawLevels = roleRow?.crm_access_level;
+          const rawLevels =
+            roleRow?.crm_level_access ?? roleRow?.crm_level_acess ?? roleRow?.crm_access_level;
 
           if (!rawLevels) {
             return [];

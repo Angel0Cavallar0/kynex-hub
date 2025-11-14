@@ -216,7 +216,7 @@ export default function ColaboradorDetalhes() {
   const fetchUserRoleData = async (userId: string, fallbackRole: AccessLevel) => {
     const { data, error } = await supabase
       .from("user_roles")
-      .select("id, role, wpp_acess, crm_acess, crm_access, crm_level_acess, crm_access_level")
+      .select("*")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -241,27 +241,37 @@ export default function ColaboradorDetalhes() {
     const roleData = data as {
       id?: string | null;
       role?: string | null;
+      wpp_access?: boolean | null;
       wpp_acess?: boolean | null;
-      crm_acess?: boolean | null;
       crm_access?: boolean | null;
+      crm_acess?: boolean | null;
+      crm_level_access?: string | null;
       crm_level_acess?: string | null;
       crm_access_level?: string | null;
     };
 
     setUserRoleRowId(roleData.id ?? null);
     setRole(normalizeRole(roleData.role));
-    setWppAccess(normalizeBinary(roleData.wpp_acess));
+    const resolvedWppAccess =
+      typeof roleData.wpp_access === "boolean"
+        ? roleData.wpp_access
+        : typeof roleData.wpp_acess === "boolean"
+        ? roleData.wpp_acess
+        : null;
+    setWppAccess(normalizeBinary(resolvedWppAccess));
 
     const resolvedCrmAccess =
-      typeof roleData.crm_acess === "boolean"
-        ? roleData.crm_acess
-        : typeof roleData.crm_access === "boolean"
+      typeof roleData.crm_access === "boolean"
         ? roleData.crm_access
+        : typeof roleData.crm_acess === "boolean"
+        ? roleData.crm_acess
         : null;
     setCrmAccess(normalizeBinary(resolvedCrmAccess));
 
     const levelValue =
-      typeof roleData.crm_level_acess === "string" && roleData.crm_level_acess.length > 0
+      typeof roleData.crm_level_access === "string" && roleData.crm_level_access.length > 0
+        ? roleData.crm_level_access
+        : typeof roleData.crm_level_acess === "string" && roleData.crm_level_acess.length > 0
         ? roleData.crm_level_acess
         : typeof roleData.crm_access_level === "string" && roleData.crm_access_level.length > 0
         ? roleData.crm_access_level
@@ -488,11 +498,9 @@ export default function ColaboradorDetalhes() {
         const userRolesPayload: Database["public"]["Tables"]["user_roles"]["Insert"] = {
           user_id: colaborador.user_id,
           role,
-          wpp_acess: binaryToBoolean(wppAccess),
-          crm_acess: binaryToBoolean(crmAccess),
           crm_access: binaryToBoolean(crmAccess),
-          crm_level_acess: crmLevel,
-          crm_access_level: crmLevel,
+          crm_level_access: crmLevel,
+          wpp_access: binaryToBoolean(wppAccess),
         };
 
         if (userRoleRowId) {
@@ -505,7 +513,7 @@ export default function ColaboradorDetalhes() {
         } = await supabase
           .from("user_roles")
           .upsert(userRolesPayload, { onConflict: "user_id" })
-          .select("id, role, wpp_acess, crm_acess, crm_access, crm_level_acess, crm_access_level")
+          .select("*")
           .maybeSingle();
 
         if (userRolesError) {
@@ -516,27 +524,37 @@ export default function ColaboradorDetalhes() {
           const updatedRoleData = userRoleData as {
             id?: string | null;
             role?: string | null;
+            wpp_access?: boolean | null;
             wpp_acess?: boolean | null;
-            crm_acess?: boolean | null;
             crm_access?: boolean | null;
+            crm_acess?: boolean | null;
+            crm_level_access?: string | null;
             crm_level_acess?: string | null;
             crm_access_level?: string | null;
           };
 
           setUserRoleRowId(updatedRoleData.id ?? null);
           setRole(normalizeRole(updatedRoleData.role));
-          setWppAccess(normalizeBinary(updatedRoleData.wpp_acess));
+          const updatedWppAccess =
+            typeof updatedRoleData.wpp_access === "boolean"
+              ? updatedRoleData.wpp_access
+              : typeof updatedRoleData.wpp_acess === "boolean"
+              ? updatedRoleData.wpp_acess
+              : null;
+          setWppAccess(normalizeBinary(updatedWppAccess));
 
           const updatedCrmAccess =
-            typeof updatedRoleData.crm_acess === "boolean"
-              ? updatedRoleData.crm_acess
-              : typeof updatedRoleData.crm_access === "boolean"
+            typeof updatedRoleData.crm_access === "boolean"
               ? updatedRoleData.crm_access
+              : typeof updatedRoleData.crm_acess === "boolean"
+              ? updatedRoleData.crm_acess
               : null;
           setCrmAccess(normalizeBinary(updatedCrmAccess));
 
           const updatedLevel =
-            typeof updatedRoleData.crm_level_acess === "string" && updatedRoleData.crm_level_acess.length > 0
+            typeof updatedRoleData.crm_level_access === "string" && updatedRoleData.crm_level_access.length > 0
+              ? updatedRoleData.crm_level_access
+              : typeof updatedRoleData.crm_level_acess === "string" && updatedRoleData.crm_level_acess.length > 0
               ? updatedRoleData.crm_level_acess
               : typeof updatedRoleData.crm_access_level === "string" && updatedRoleData.crm_access_level.length > 0
               ? updatedRoleData.crm_access_level

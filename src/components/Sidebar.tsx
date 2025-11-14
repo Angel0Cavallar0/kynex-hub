@@ -46,7 +46,7 @@ type SidebarProfile = {
 
 type UserPermissions = {
   crm_access: boolean;
-  wpp_acess: boolean;
+  wpp_access: boolean;
 };
 
 export function Sidebar() {
@@ -58,7 +58,7 @@ export function Sidebar() {
   const [profile, setProfile] = useState<SidebarProfile | null>(null);
   const [permissions, setPermissions] = useState<UserPermissions>({
     crm_access: false,
-    wpp_acess: false,
+    wpp_access: false,
   });
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function Sidebar() {
       if (!user?.id) {
         if (isActive) {
           setProfile(null);
-          setPermissions({ crm_access: false, wpp_acess: false });
+          setPermissions({ crm_access: false, wpp_access: false });
         }
         return;
       }
@@ -96,14 +96,28 @@ export function Sidebar() {
       // Buscar permissões
       const { data: userRoles } = await supabase
         .from("user_roles")
-        .select("crm_access, wpp_acess")
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (isActive && userRoles) {
+        const resolvedWppAccess =
+          typeof userRoles.wpp_access === "boolean"
+            ? userRoles.wpp_access
+            : typeof (userRoles as { wpp_acess?: boolean }).wpp_acess === "boolean"
+            ? (userRoles as { wpp_acess?: boolean }).wpp_acess ?? false
+            : false;
+
+        const resolvedCrmAccess =
+          typeof userRoles.crm_access === "boolean"
+            ? userRoles.crm_access
+            : typeof (userRoles as { crm_acess?: boolean }).crm_acess === "boolean"
+            ? (userRoles as { crm_acess?: boolean }).crm_acess ?? false
+            : false;
+
         setPermissions({
-          crm_access: userRoles.crm_access ?? false,
-          wpp_acess: userRoles.wpp_acess ?? false,
+          crm_access: resolvedCrmAccess,
+          wpp_access: resolvedWppAccess,
         });
       }
     };
@@ -223,7 +237,7 @@ export function Sidebar() {
         )}
 
         {/* WhatsApp - Condicional baseado em permissões */}
-        {permissions.wpp_acess && (
+        {permissions.wpp_access && (
           <NavLink
             to="/whatsapp"
             end
