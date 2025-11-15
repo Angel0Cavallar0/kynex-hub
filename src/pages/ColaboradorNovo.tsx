@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -271,16 +271,11 @@ export default function ColaboradorNovo() {
 
   return (
     <Layout>
-      <div className="w-full max-w-6xl mx-auto space-y-6 text-left">
+      <div className="w-full max-w-6xl space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/colaboradores")}
-              >
+              <Button variant="ghost" size="icon" onClick={() => navigate("/colaboradores")}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
@@ -288,340 +283,317 @@ export default function ColaboradorNovo() {
                 <p className="text-muted-foreground">Cadastre um novo membro da equipe</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/colaboradores")}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading} className="min-w-[180px]">
-                {loading ? "Salvando..." : "Criar Colaborador"}
-              </Button>
-            </div>
+            <Button type="submit" disabled={loading} className="min-w-[180px]">
+              {loading ? "Salvando..." : "Criar Colaborador"}
+            </Button>
           </div>
 
-          <Card className={cardSurfaceClasses}>
-            <CardHeader className="space-y-1 text-left pb-4">
-              <CardTitle className="text-xl font-semibold text-foreground">
-                Informações Principais
-              </CardTitle>
-              <CardDescription>
-                Preencha os dados básicos para o cadastro do colaborador.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6">
-              <div className="flex flex-col gap-6 lg:flex-row">
-                <div className="flex w-full max-w-[180px] flex-col items-center gap-4">
-                  <div
-                    className="flex h-36 w-36 items-center justify-center rounded-full bg-emerald-800 text-lg font-semibold uppercase tracking-wide text-white"
-                    style={
-                      photoPreview
-                        ? {
-                            backgroundImage: `url(${photoPreview})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : undefined
-                    }
-                  >
-                    {!photoPreview && "foto"}
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <input
-                      id="foto_colaborador"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => document.getElementById("foto_colaborador")?.click()}
-                      className="h-8 rounded-full bg-emerald-800 px-4 text-xs font-semibold tracking-wide text-white hover:bg-emerald-900"
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card className={`order-1 ${cardSurfaceClasses}`}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-foreground">
+                  Informações Principais
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 lg:flex-row">
+                  <div className="flex w-full max-w-[180px] flex-col items-center gap-4">
+                    <div
+                      className="flex h-36 w-36 items-center justify-center rounded-full bg-emerald-800 text-lg font-semibold uppercase tracking-wide text-white"
+                      style={
+                        photoPreview
+                          ? {
+                              backgroundImage: `url(${photoPreview})`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
+                            }
+                          : undefined
+                      }
                     >
-                      CARREGAR FOTO
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Utilize uma imagem quadrada para melhor resultado.
+                      {!photoPreview && "foto"}
+                    </div>
+                    <div>
+                      <input
+                        id="foto_colaborador"
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => document.getElementById("foto_colaborador")?.click()}
+                        className="h-8 rounded-full bg-emerald-800 px-4 text-xs font-semibold tracking-wide text-white hover:bg-emerald-900"
+                      >
+                        CARREGAR FOTO
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid flex-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                    <Label htmlFor="nome">Nome *</Label>
+                      <Input
+                        id="nome"
+                        required
+                        value={formData.nome}
+                        className={inputSurfaceClasses}
+                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sobrenome">Sobrenome</Label>
+                      <Input
+                        id="sobrenome"
+                        value={formData.sobrenome}
+                        className={inputSurfaceClasses}
+                        onChange={(e) => setFormData({ ...formData, sobrenome: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="apelido">Apelido</Label>
+                      <Input
+                        id="apelido"
+                        value={formData.apelido}
+                        className={inputSurfaceClasses}
+                        onChange={(e) => setFormData({ ...formData, apelido: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cargo">Cargo</Label>
+                      <Input
+                        id="cargo"
+                        value={formData.cargo}
+                        className={inputSurfaceClasses}
+                        onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="email_corporativo">E-mail Corporativo</Label>
+                      <Input
+                        id="email_corporativo"
+                        type="email"
+                        value={formData.email_corporativo}
+                        className={`md:max-w-xl ${inputSurfaceClasses}`}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            email_corporativo: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="id_clickup">ID ClickUp</Label>
+                      <Input
+                        id="id_clickup"
+                        value={formData.id_clickup}
+                        className={inputSurfaceClasses}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            id_clickup: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="id_slack">ID Slack</Label>
+                      <Input
+                        id="id_slack"
+                        value={formData.id_slack}
+                        className={inputSurfaceClasses}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            id_slack: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="data_admissao">Data de Contratação</Label>
+                      <Input
+                        id="data_admissao"
+                        type="date"
+                        value={formData.data_admissao}
+                        className={inputSurfaceClasses}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            data_admissao: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="border-muted-foreground/20" />
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col">
+                    <p className="text-base font-semibold text-foreground">Status do Colaborador</p>
+                    <p className="text-sm text-muted-foreground">
+                      Controle o status atual do colaborador.
                     </p>
                   </div>
+                  <Select value={status} onValueChange={(value) => handleStatusChange(value as StatusValue)}>
+                    <SelectTrigger
+                      id="status_colaborador"
+                      className={selectTriggerClasses}
+                      aria-label="Selecione o status do colaborador"
+                    >
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">{option.label}</span>
+                            <span className="text-xs text-muted-foreground">{option.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid flex-1 gap-4 md:grid-cols-2">
+              </CardContent>
+            </Card>
+
+            {userRole === "admin" && (
+              <Card className={`order-2 ${cardSurfaceClasses}`}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    Dados Sensíveis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome *</Label>
+                    <Label htmlFor="email_pessoal">E-mail Pessoal</Label>
                     <Input
-                      id="nome"
-                      required
-                      value={formData.nome}
-                      className={inputSurfaceClasses}
-                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sobrenome">Sobrenome</Label>
-                    <Input
-                      id="sobrenome"
-                      value={formData.sobrenome}
-                      className={inputSurfaceClasses}
-                      onChange={(e) => setFormData({ ...formData, sobrenome: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="apelido">Apelido</Label>
-                    <Input
-                      id="apelido"
-                      value={formData.apelido}
-                      className={inputSurfaceClasses}
-                      onChange={(e) => setFormData({ ...formData, apelido: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cargo">Cargo</Label>
-                    <Input
-                      id="cargo"
-                      value={formData.cargo}
-                      className={inputSurfaceClasses}
-                      onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="email_corporativo">Email Corporativo</Label>
-                    <Input
-                      id="email_corporativo"
+                      id="email_pessoal"
                       type="email"
-                      value={formData.email_corporativo}
-                      className={inputSurfaceClasses}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          email_corporativo: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="id_clickup">ID ClickUp</Label>
-                    <Input
-                      id="id_clickup"
-                      value={formData.id_clickup}
-                      className={inputSurfaceClasses}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          id_clickup: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="id_slack">ID Slack</Label>
-                    <Input
-                      id="id_slack"
-                      value={formData.id_slack}
-                      className={inputSurfaceClasses}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          id_slack: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="data_admissao">Data de Admissão</Label>
-                    <Input
-                      id="data_admissao"
-                      type="date"
-                      value={formData.data_admissao}
-                      className={inputSurfaceClasses}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          data_admissao: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator className="border-muted-foreground/20" />
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col">
-                  <p className="text-base font-semibold text-foreground">Status do colaborador</p>
-                  <p className="text-sm text-muted-foreground">Controle o status atual do colaborador.</p>
-                </div>
-                <Select value={status} onValueChange={(value) => handleStatusChange(value as StatusValue)}>
-                  <SelectTrigger
-                    id="status_colaborador"
-                    className={`${selectTriggerClasses} w-full sm:w-auto`}
-                    aria-label="Selecione o status do colaborador"
-                  >
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium">{option.label}</span>
-                          <span className="text-xs text-muted-foreground">{option.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator className="border-muted-foreground/20" />
-
-              <div className="flex flex-col gap-1">
-                <p className="text-base font-semibold text-foreground">Permissões iniciais</p>
-                <p className="text-sm text-muted-foreground">
-                  As permissões padrão serão aplicadas automaticamente após o cadastro.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {userRole === "admin" && (
-            <Card className={cardSurfaceClasses}>
-              <CardHeader className="space-y-1 text-left pb-4">
-                <CardTitle className="text-xl font-semibold text-foreground">
-                  Dados Sensíveis
-                </CardTitle>
-                <CardDescription>
-                  Informações confidenciais, visíveis apenas para administradores.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email_pessoal">Email Pessoal</Label>
-                  <Input
-                    id="email_pessoal"
-                    type="email"
-                    value={privateData.email_pessoal}
-                    className={inputSurfaceClasses}
-                    onChange={(e) =>
-                      setPrivateData({
-                        ...privateData,
-                        email_pessoal: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <Input
-                      id="cpf"
-                      value={privateData.cpf}
-                      placeholder="000.000.000-00"
+                      value={privateData.email_pessoal}
                       className={inputSurfaceClasses}
                       onChange={(e) =>
                         setPrivateData({
                           ...privateData,
-                          cpf: e.target.value,
+                          email_pessoal: e.target.value,
                         })
                       }
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rg">RG</Label>
-                    <Input
-                      id="rg"
-                      value={privateData.rg}
-                      className={inputSurfaceClasses}
-                      onChange={(e) =>
-                        setPrivateData({
-                          ...privateData,
-                          rg: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endereco">Endereço Residencial</Label>
-                  <Input
-                    id="endereco"
-                    value={privateData.endereco}
-                    className={inputSurfaceClasses}
-                    onChange={(e) =>
-                      setPrivateData({
-                        ...privateData,
-                        endereco: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefone_pessoal">Telefone Pessoal</Label>
-                  <PhoneInput
-                    value={privateData.telefone_pessoal}
-                    className={inputSurfaceClasses}
-                    onChange={(value) =>
-                      setPrivateData({
-                        ...privateData,
-                        telefone_pessoal: value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="data_aniversario">Data de Aniversário</Label>
-                  <Input
-                    id="data_aniversario"
-                    type="date"
-                    value={privateData.data_aniversario}
-                    className={inputSurfaceClasses}
-                    onChange={(e) =>
-                      setPrivateData({
-                        ...privateData,
-                        data_aniversario: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <Separator className="border-muted-foreground/20" />
-                <div className="space-y-4">
-                  <h4 className="text-base font-semibold text-foreground">Contatos de emergência</h4>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="contato_emergencia_nome">Nome</Label>
+                      <Label htmlFor="cpf">CPF</Label>
                       <Input
-                        id="contato_emergencia_nome"
-                        placeholder="Ex: Marcia"
-                        value={privateData.contato_emergencia_nome}
+                        id="cpf"
+                        value={privateData.cpf}
+                        placeholder="000.000.000-00"
                         className={inputSurfaceClasses}
                         onChange={(e) =>
                           setPrivateData({
                             ...privateData,
-                            contato_emergencia_nome: e.target.value,
+                            cpf: e.target.value,
                           })
                         }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="contato_emergencia_telefone">Telefone</Label>
-                      <PhoneInput
-                        value={privateData.contato_emergencia_telefone}
+                      <Label htmlFor="rg">RG</Label>
+                      <Input
+                        id="rg"
+                        value={privateData.rg}
                         className={inputSurfaceClasses}
-                        onChange={(value) =>
+                        onChange={(e) =>
                           setPrivateData({
                             ...privateData,
-                            contato_emergencia_telefone: value,
+                            rg: e.target.value,
                           })
                         }
                       />
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  <div className="space-y-2">
+                    <Label htmlFor="endereco">Endereço Residencial</Label>
+                    <Input
+                      id="endereco"
+                      value={privateData.endereco}
+                      className={inputSurfaceClasses}
+                      onChange={(e) =>
+                        setPrivateData({
+                          ...privateData,
+                          endereco: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="telefone_pessoal">Telefone Pessoal</Label>
+                    <PhoneInput
+                      value={privateData.telefone_pessoal}
+                      className={inputSurfaceClasses}
+                      onChange={(value) =>
+                        setPrivateData({
+                          ...privateData,
+                          telefone_pessoal: value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="data_aniversario">Data de Aniversário</Label>
+                    <Input
+                      id="data_aniversario"
+                      type="date"
+                      value={privateData.data_aniversario}
+                      className={inputSurfaceClasses}
+                      onChange={(e) =>
+                        setPrivateData({
+                          ...privateData,
+                          data_aniversario: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <Separator className="border-muted-foreground/20" />
+                  <div className="space-y-4">
+                    <h4 className="text-base font-semibold text-foreground">Contatos de emergência</h4>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="contato_emergencia_nome">Nome</Label>
+                        <Input
+                          id="contato_emergencia_nome"
+                          placeholder="Ex: Marcia"
+                          value={privateData.contato_emergencia_nome}
+                          className={inputSurfaceClasses}
+                          onChange={(e) =>
+                            setPrivateData({
+                              ...privateData,
+                              contato_emergencia_nome: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contato_emergencia_telefone">Telefone</Label>
+                        <PhoneInput
+                          value={privateData.contato_emergencia_telefone}
+                          className={inputSurfaceClasses}
+                          onChange={(value) =>
+                            setPrivateData({
+                              ...privateData,
+                              contato_emergencia_telefone: value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </form>
       </div>
     </Layout>
