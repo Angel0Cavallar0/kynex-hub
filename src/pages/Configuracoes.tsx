@@ -90,104 +90,117 @@ export default function Configuracoes() {
             <TabsTrigger value="organizational">Organização</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="appearance" className="space-y-6">
+          <TabsContent value="appearance">
             <Card>
               <CardHeader>
-                <CardTitle>Identidade Visual</CardTitle>
-                <CardDescription>Configure a logo e o favicon da aplicação</CardDescription>
+                <CardTitle>Aparência</CardTitle>
+                <CardDescription>
+                  Centralize as definições de identidade visual, cores e tema do sistema
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="logo">URL da Logo</Label>
-                  <Input
-                    id="logo"
-                    placeholder="https://exemplo.com/logo.png"
-                    value={tempLogoUrl}
-                    onChange={(e) => setTempLogoUrl(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="favicon">URL do Favicon</Label>
-                  <Input
-                    id="favicon"
-                    placeholder="https://exemplo.com/favicon.ico"
-                    value={tempFaviconUrl}
-                    onChange={(e) => setTempFaviconUrl(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleSaveUrls}>Salvar URLs</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Cores do Tema</CardTitle>
-                <CardDescription>Personalize as cores da interface</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Cor Primária</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      type="color"
-                      value={hslToHex(primaryColor)}
-                      onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      value={hslToHex(primaryColor)}
-                      onChange={(e) => {
-                        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                          setPrimaryColor(hexToHsl(e.target.value));
-                        }
-                      }}
-                      placeholder="#096B68"
-                      className="w-32"
-                    />
+              <CardContent className="space-y-8">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Identidade Visual</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure a logo e o favicon exibidos na plataforma
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="logo">URL da Logo</Label>
+                      <Input
+                        id="logo"
+                        placeholder="https://exemplo.com/logo.png"
+                        value={tempLogoUrl}
+                        onChange={(e) => setTempLogoUrl(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="favicon">URL do Favicon</Label>
+                      <Input
+                        id="favicon"
+                        placeholder="https://exemplo.com/favicon.ico"
+                        value={tempFaviconUrl}
+                        onChange={(e) => setTempFaviconUrl(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleSaveUrls}>Salvar URLs</Button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Cor Secundária</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      type="color"
-                      value={hslToHex(secondaryColor)}
-                      onChange={(e) => setSecondaryColor(hexToHsl(e.target.value))}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      value={hslToHex(secondaryColor)}
-                      onChange={(e) => {
-                        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                          setSecondaryColor(hexToHsl(e.target.value));
-                        }
-                      }}
-                      placeholder="#129990"
-                      className="w-32"
-                    />
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Cores do Tema</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Personalize a paleta primária e secundária utilizada na interface
+                    </p>
                   </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Cor Primária</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={hslToHex(primaryColor)}
+                          onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          value={hslToHex(primaryColor)}
+                          onChange={(e) => {
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              setPrimaryColor(hexToHsl(e.target.value));
+                            }
+                          }}
+                          placeholder="#096B68"
+                          className="w-32"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Cor Secundária</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={hslToHex(secondaryColor)}
+                          onChange={(e) => setSecondaryColor(hexToHsl(e.target.value))}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          value={hslToHex(secondaryColor)}
+                          onChange={(e) => {
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              setSecondaryColor(hexToHsl(e.target.value));
+                            }
+                          }}
+                          placeholder="#129990"
+                          className="w-32"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <Button onClick={saveAsGlobal} variant="outline">
+                    Salvar como padrão para todos os usuários
+                  </Button>
                 </div>
 
-                <Button onClick={saveAsGlobal} variant="outline">
-                  Salvar como padrão para todos os usuários
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tema</CardTitle>
-                <CardDescription>Alterne entre modo claro e escuro</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="dark-mode">Modo Escuro</Label>
-                  <Switch
-                    id="dark-mode"
-                    checked={darkMode}
-                    onCheckedChange={setDarkMode}
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Tema</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Escolha entre modo claro ou escuro conforme a preferência
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="dark-mode">Modo Escuro</Label>
+                    <Switch
+                      id="dark-mode"
+                      checked={darkMode}
+                      onCheckedChange={setDarkMode}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
