@@ -50,7 +50,10 @@ export default function Whatsapp() {
         .order("created_at", { ascending: true });
 
       if (error) {
-        toast.error("Não foi possível carregar as mensagens do WhatsApp.");
+        console.error("Erro ao carregar mensagens do WhatsApp:", error);
+        toast.error("Não foi possível carregar as mensagens do WhatsApp.", {
+          description: error.message,
+        });
       } else if (data) {
         setMessages(data as WhatsappMessage[]);
         setSelectedChat((current) => current ?? data[0]?.chat_id ?? null);
