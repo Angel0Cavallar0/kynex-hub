@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
-type WhatsappMessage = {
+type ChatMessage = {
   chat_id: string;
   message_id: string;
   numero_wpp: string | null;
@@ -23,7 +23,26 @@ type WhatsappMessage = {
   message: string | null;
   reference_message_id: string | null;
   created_at: string | null;
+  source: "chat";
 };
+
+type GroupMessage = {
+  group_id: string;
+  group_name: string | null;
+  group_photo: string | null;
+  is_group: boolean | null;
+  is_edited: boolean | null;
+  nome_wpp: string | null;
+  sender_phone: string | null;
+  message_id: string;
+  message: string | null;
+  direcao: string | null;
+  encaminhada: boolean | null;
+  created_at: string | null;
+  source: "group";
+};
+
+type WhatsappMessage = ChatMessage | GroupMessage;
 
 const WEBHOOK_KEY = "whatsapp-webhook-url";
 
@@ -38,6 +57,7 @@ export default function Whatsapp() {
   const [messages, setMessages] = useState<WhatsappMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChatSource, setSelectedChatSource] = useState<"chat" | "group" | null>(null);
   const [replyTo, setReplyTo] = useState<WhatsappMessage | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [webhookUrl, setWebhookUrl] = useState<string>("");
@@ -82,58 +102,120 @@ export default function Whatsapp() {
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .order("created_at", { ascending: true });
 
-      if (error) {
+      const [{ data: chatData, error: chatError }, { data: groupData, error: groupError }] =
+        await Promise.all([
+          supabase.from("chat_messages").select("*").order("created_at", { ascending: true }),
+          supabase.from("group_messages").select("*").order("created_at", { ascending: true }),
+        ]);
+
+      if (chatError || groupError) {
+        const error = chatError || groupError;
         console.error("Erro ao carregar mensagens do WhatsApp:", error);
         toast.error("Não foi possível carregar as mensagens do WhatsApp.", {
-          description: error.message,
+          description: error?.message,
         });
-      } else if (data) {
-        setMessages(data as WhatsappMessage[]);
-        setSelectedChat((current) => current ?? data[0]?.chat_id ?? null);
       }
+
+      const chatMessages = (chatData || []).map((message) => ({
+        ...(message as ChatMessage),
+        source: "chat" as const,
+      }));
+
+      const groupMessages = (groupData || []).map((message) => ({
+        ...(message as GroupMessage),
+        source: "group" as const,
+      }));
+
+      const combinedMessages = [...chatMessages, ...groupMessages].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      setMessages(combinedMessages);
+
+      if (combinedMessages.length > 0) {
+        const firstMessage = combinedMessages[0];
+        const firstId = firstMessage.source === "group" ? firstMessage.group_id : firstMessage.chat_id;
+        setSelectedChat((current) => current ?? firstId ?? null);
+        setSelectedChatSource((current) => current ?? firstMessage.source);
+      }
+
       setLoading(false);
     };
 
     fetchMessages();
 
-    // Real-time subscription
-    const channel = supabase
-      .channel('chat-messages-changes')
+    const chatChannel = supabase
+      .channel("chat-messages-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages'
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
         },
         (payload) => {
-          console.log('Nova mensagem recebida:', payload);
-          setMessages((prev) => [...prev, payload.new as WhatsappMessage]);
+          console.log("Nova mensagem recebida:", payload);
+          setMessages((prev) => [...prev, { ...(payload.new as ChatMessage), source: "chat" }]);
+        }
+      )
+      .subscribe();
+
+    const groupChannel = supabase
+      .channel("group-messages-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "group_messages",
+        },
+        (payload) => {
+          console.log("Nova mensagem de grupo recebida:", payload);
+          setMessages((prev) => [...prev, { ...(payload.new as GroupMessage), source: "group" }]);
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(chatChannel);
+      supabase.removeChannel(groupChannel);
     };
   }, []);
 
   const chats = useMemo(() => {
-    const grouped = new Map<string, { chat: string; name: string; isGroup: boolean; lastMessage?: WhatsappMessage }>();
+    const grouped = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        photo: string | null;
+        isGroup: boolean;
+        lastMessage?: WhatsappMessage;
+        source: "chat" | "group";
+      }
+    >();
 
     messages.forEach((message) => {
-      const current = grouped.get(message.chat_id);
-      if (!current || (message.created_at && (!current.lastMessage || message.created_at > current.lastMessage.created_at!))) {
-        grouped.set(message.chat_id, {
-          chat: message.chat_id,
-          name: message.chat_name || "Chat sem nome",
-          isGroup: Boolean(message.is_group),
+      const isGroupSource = message.source === "group";
+      const id = isGroupSource ? message.group_id : message.chat_id;
+      if (!id) return;
+
+      const key = `${message.source}:${id}`;
+      const current = grouped.get(key);
+      const isMoreRecent =
+        message.created_at && (!current?.lastMessage?.created_at || message.created_at > current.lastMessage.created_at);
+
+      if (!current || isMoreRecent) {
+        grouped.set(key, {
+          id,
+          name: isGroupSource ? message.group_name || "Grupo sem nome" : message.chat_name || "Chat sem nome",
+          photo: isGroupSource ? message.group_photo || null : message.foto_contato || null,
+          isGroup: isGroupSource ? true : Boolean(message.is_group),
           lastMessage: message,
+          source: message.source,
         });
       }
     });
@@ -148,13 +230,16 @@ export default function Whatsapp() {
   const currentMessages = useMemo(
     () =>
       messages
-        .filter((message) => message.chat_id === selectedChat)
+        .filter((message) => {
+          const id = message.source === "group" ? message.group_id : message.chat_id;
+          return id === selectedChat && message.source === selectedChatSource;
+        })
         .sort((a, b) => {
           const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
           const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return dateA - dateB;
         }),
-    [messages, selectedChat]
+    [messages, selectedChat, selectedChatSource]
   );
 
   useEffect(() => {
@@ -186,41 +271,98 @@ export default function Whatsapp() {
     const formattedContent = `*#${senderName}:*\n${newMessage}`;
 
     const baseMessage = replyTo || currentMessages[currentMessages.length - 1];
-    const newRecord: WhatsappMessage = {
-      chat_id: baseMessage?.chat_id || selectedChat || crypto.randomUUID(),
-      message_id: crypto.randomUUID(),
-      numero_wpp: baseMessage?.numero_wpp || null,
-      chat_name: baseMessage?.chat_name || "Chat sem nome",
-      direcao: "SENT",
-      foto_contato: baseMessage?.foto_contato || null,
-      encaminhado: baseMessage?.encaminhado ?? false,
-      is_group: baseMessage?.is_group ?? false,
-      is_edited: false,
-      message: formattedContent,
-      reference_message_id: replyTo?.message_id || baseMessage?.message_id || null,
-      created_at: new Date().toISOString(),
-    };
+    const targetSource = selectedChatSource ?? baseMessage?.source ?? "chat";
+    let sentMessage: WhatsappMessage | null = null;
 
-    const { error } = await supabase.from("chat_messages").insert(newRecord);
-
-    if (error) {
-      toast.error("Não foi possível enviar a mensagem.");
-      return;
+    if (!selectedChat || !selectedChatSource) {
+      const defaultId = baseMessage?.source === "group" ? baseMessage.group_id : baseMessage?.chat_id;
+      setSelectedChat(defaultId || crypto.randomUUID());
+      setSelectedChatSource(targetSource);
     }
 
-    setMessages((prev) => [...prev, newRecord]);
-    setSelectedChat((current) => current ?? newRecord.chat_id);
+    if (targetSource === "group") {
+      const groupInfo = chats.find(
+        (chat) => chat.id === selectedChat && chat.source === "group"
+      );
+
+      const newRecord: GroupMessage = {
+        group_id: selectedChat || groupInfo?.id || crypto.randomUUID(),
+        group_name: groupInfo?.name || (baseMessage && "group_name" in baseMessage ? baseMessage.group_name : null) ||
+          "Grupo sem nome",
+        group_photo: groupInfo?.photo || (baseMessage && "group_photo" in baseMessage ? baseMessage.group_photo : null) || null,
+        is_group: true,
+        is_edited: false,
+        nome_wpp: senderName,
+        sender_phone:
+          (baseMessage && "sender_phone" in baseMessage ? baseMessage.sender_phone : null) || null,
+        message_id: crypto.randomUUID(),
+        message: formattedContent,
+        direcao: "SENT",
+        encaminhada: false,
+        created_at: new Date().toISOString(),
+        source: "group",
+      };
+
+      const { source, ...recordToInsert } = newRecord;
+      const { error } = await supabase.from("group_messages").insert(recordToInsert);
+
+      if (error) {
+        toast.error("Não foi possível enviar a mensagem.");
+        return;
+      }
+
+      sentMessage = newRecord;
+      setMessages((prev) => [...prev, newRecord]);
+      setSelectedChat(newRecord.group_id);
+      setSelectedChatSource("group");
+    } else {
+      const newRecord: ChatMessage = {
+        chat_id: baseMessage?.chat_id || selectedChat || crypto.randomUUID(),
+        message_id: crypto.randomUUID(),
+        numero_wpp: baseMessage?.numero_wpp || null,
+        chat_name: baseMessage?.chat_name || "Chat sem nome",
+        direcao: "SENT",
+        foto_contato: baseMessage?.foto_contato || null,
+        encaminhado: baseMessage?.encaminhado ?? false,
+        is_group: baseMessage?.is_group ?? false,
+        is_edited: false,
+        message: formattedContent,
+        reference_message_id: replyTo?.message_id || baseMessage?.message_id || null,
+        created_at: new Date().toISOString(),
+        source: "chat",
+      };
+
+      const { source, ...recordToInsert } = newRecord;
+      const { error } = await supabase.from("chat_messages").insert(recordToInsert);
+
+      if (error) {
+        toast.error("Não foi possível enviar a mensagem.");
+        return;
+      }
+
+      sentMessage = newRecord;
+      setMessages((prev) => [...prev, newRecord]);
+      setSelectedChat((current) => current ?? newRecord.chat_id);
+      setSelectedChatSource("chat");
+    }
+
     setNewMessage("");
     setReplyTo(null);
 
     if (webhookUrl) {
       try {
+        const sanitizeMessage = (message: WhatsappMessage | null) => {
+          if (!message) return null;
+          const { source, ...rest } = message;
+          return rest;
+        };
+
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            reply: replyTo,
-            message: newRecord,
+            reply: sanitizeMessage(replyTo),
+            message: sanitizeMessage(sentMessage),
           }),
         });
       } catch (err) {
@@ -231,8 +373,8 @@ export default function Whatsapp() {
   };
 
   const selectedChatData = useMemo(() => {
-    return chats.find((chat) => chat.chat === selectedChat);
-  }, [chats, selectedChat]);
+    return chats.find((chat) => chat.id === selectedChat && chat.source === selectedChatSource);
+  }, [chats, selectedChat, selectedChatSource]);
 
   return (
     <Layout noPadding>
@@ -251,15 +393,18 @@ export default function Whatsapp() {
               <div className="divide-y divide-border">
                 {chats.map((chat) => (
                   <button
-                    key={chat.chat}
-                    onClick={() => setSelectedChat(chat.chat)}
+                    key={`${chat.source}-${chat.id}`}
+                    onClick={() => {
+                      setSelectedChat(chat.id);
+                      setSelectedChatSource(chat.source);
+                    }}
                     className={`w-full p-4 text-left transition hover:bg-muted/50 ${
-                      selectedChat === chat.chat ? "bg-muted/80" : ""
+                      selectedChat === chat.id && selectedChatSource === chat.source ? "bg-muted/80" : ""
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={chat.lastMessage?.foto_contato || undefined} alt={chat.name} />
+                        <AvatarImage src={chat.photo || undefined} alt={chat.name} />
                         <AvatarFallback className="bg-primary/10 text-primary">
                           {chat.name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
@@ -297,7 +442,7 @@ export default function Whatsapp() {
                 <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-muted/30 p-4">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={selectedChatData?.lastMessage?.foto_contato || undefined}
+                      src={selectedChatData?.photo || undefined}
                       alt={selectedChatData?.name}
                     />
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -321,12 +466,15 @@ export default function Whatsapp() {
                         className={`flex ${message.direcao === "SENT" ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
-                            message.direcao === "SENT"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background border border-border"
+                        className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
+                          message.direcao === "SENT"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background border border-border"
                           }`}
                         >
+                          {message.source === "group" && "nome_wpp" in message && message.nome_wpp && (
+                            <p className="mb-1 text-[11px] font-semibold opacity-80">{message.nome_wpp}</p>
+                          )}
                           <p className="whitespace-pre-wrap text-sm">{message.message}</p>
                           <div className="mt-1 flex items-center justify-end gap-1">
                             {message.is_edited && (
