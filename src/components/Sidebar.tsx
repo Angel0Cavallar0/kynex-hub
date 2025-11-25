@@ -226,8 +226,8 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
       {/* Logo */}
       <div
         className={cn(
-          "border-b border-sidebar-border",
-          collapsed ? "flex justify-center p-3" : "p-4"
+          "flex items-center justify-center border-b border-sidebar-border",
+          collapsed ? "p-3" : "p-4"
         )}
       >
         {(collapsed ? logoIconUrl : logoUrl) ? (
@@ -351,7 +351,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
       </nav>
 
       {/* Footer com Logs, Configurações e Sair */}
-      <div className={cn("px-4 py-2 border-t border-sidebar-border", collapsed ? "px-2" : undefined)}>
+      <div className={cn("px-4 py-2", collapsed ? "px-2" : undefined)}>
         <div className="flex flex-col gap-3">
           <button
             type="button"
@@ -376,7 +376,6 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
               </div>
             )}
           </button>
-          <div className="h-px bg-sidebar-border" />
           <TooltipProvider delayDuration={0}>
             {collapsed ? (
               <HoverCard openDelay={0} closeDelay={75}>
