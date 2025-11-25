@@ -213,7 +213,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
     };
   }, [hoverTimer, closeTimer]);
 
-  const containerWidth = collapsed ? "w-20" : "w-64";
+  const containerWidth = collapsed ? "w-16" : "w-64";
 
   return (
     <aside
@@ -225,15 +225,19 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
       {/* Logo */}
       <div
         className={cn(
-          "p-6 border-b border-sidebar-border",
-          collapsed ? "flex justify-center" : undefined
+          "border-b border-sidebar-border",
+          collapsed ? "flex justify-center p-4" : "p-6"
         )}
       >
         {(collapsed ? logoIconUrl : logoUrl) ? (
           <img
             src={collapsed ? logoIconUrl || logoUrl : logoUrl}
             alt="Logo"
-            className={cn("h-10 w-auto", collapsed ? "mx-auto" : undefined)}
+            className={cn(
+              "h-10 object-contain",
+              collapsed ? "w-10" : "w-auto",
+              collapsed ? "mx-auto" : undefined
+            )}
           />
         ) : (
           <h2
