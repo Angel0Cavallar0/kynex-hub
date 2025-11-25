@@ -63,7 +63,7 @@ type SidebarProps = {
 
 export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
   const { user, signOut, userRole } = useAuth();
-  const { logoUrl } = useTheme();
+  const { logoUrl, logoIconUrl } = useTheme();
   const [clickUpOpen, setClickUpOpen] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<number | null>(null);
   const [closeTimer, setCloseTimer] = useState<number | null>(null);
@@ -229,8 +229,12 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
           collapsed ? "flex justify-center" : undefined
         )}
       >
-        {logoUrl ? (
-          <img src={logoUrl} alt="Logo" className={cn("h-10 w-auto", collapsed ? "mx-auto" : undefined)} />
+        {(collapsed ? logoIconUrl : logoUrl) ? (
+          <img
+            src={collapsed ? logoIconUrl || logoUrl : logoUrl}
+            alt="Logo"
+            className={cn("h-10 w-auto", collapsed ? "mx-auto" : undefined)}
+          />
         ) : (
           <h2
             className={cn(
