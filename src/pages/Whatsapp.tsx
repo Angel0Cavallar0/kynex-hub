@@ -265,6 +265,15 @@ export default function Whatsapp() {
     });
   };
 
+  const formatDateLabel = (timestamp?: string | null) => {
+    if (!timestamp) return "Data desconhecida";
+    return new Date(timestamp).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -460,38 +469,55 @@ export default function Whatsapp() {
                 {/* Mensagens */}
                 <ScrollArea className="flex-1 bg-muted/20 p-4">
                   <div className="space-y-3">
-                    {currentMessages.map((message) => (
-                      <div
-                        key={message.message_id}
-                        className={`flex ${message.direcao === "SENT" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                        className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
-                          message.direcao === "SENT"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background border border-border"
-                          }`}
-                        >
-                          {message.source === "group" && "nome_wpp" in message && message.nome_wpp && (
-                            <p className="mb-1 text-[11px] font-semibold opacity-80">{message.nome_wpp}</p>
+                    {currentMessages.map((message, index) => {
+                      const previousMessage = currentMessages[index - 1];
+                      const currentDateLabel = formatDateLabel(message.created_at);
+                      const previousDateLabel = formatDateLabel(previousMessage?.created_at);
+                      const showDateSeparator = index === 0 || currentDateLabel !== previousDateLabel;
+
+                      return (
+                        <div key={message.message_id} className="space-y-2">
+                          {showDateSeparator && (
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <div className="h-px flex-1 bg-border" />
+                              <span className="rounded-full bg-muted px-3 py-1 font-semibold capitalize">
+                                {currentDateLabel}
+                              </span>
+                              <div className="h-px flex-1 bg-border" />
+                            </div>
                           )}
-                          <p className="whitespace-pre-wrap text-sm">{message.message}</p>
-                          <div className="mt-1 flex items-center justify-end gap-1">
-                            {message.is_edited && (
-                              <span className="text-[10px] opacity-60">editado</span>
-                            )}
-                            <span className="text-[10px] opacity-60">
-                              {message.created_at
-                                ? new Date(message.created_at).toLocaleTimeString("pt-BR", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })
-                                : ""}
-                            </span>
+                          <div
+                            className={`flex ${message.direcao === "SENT" ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
+                                message.direcao === "SENT"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background border border-border"
+                              }`}
+                            >
+                              {message.source === "group" && "nome_wpp" in message && message.nome_wpp && (
+                                <p className="mb-1 text-[11px] font-semibold opacity-80">{message.nome_wpp}</p>
+                              )}
+                              <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                              <div className="mt-1 flex items-center justify-end gap-1">
+                                {message.is_edited && (
+                                  <span className="text-[10px] opacity-60">editado</span>
+                                )}
+                                <span className="text-[10px] opacity-60">
+                                  {message.created_at
+                                    ? new Date(message.created_at).toLocaleTimeString("pt-BR", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
