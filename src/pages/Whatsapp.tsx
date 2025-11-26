@@ -21,6 +21,10 @@ type ChatMessage = {
   is_group: boolean | null;
   is_edited: boolean | null;
   message: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  audio_url?: string | null;
+  document_url?: string | null;
   reference_message_id: string | null;
   created_at: string | null;
   source: "chat";
@@ -36,6 +40,10 @@ type GroupMessage = {
   sender_phone: string | null;
   message_id: string;
   message: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  audio_url?: string | null;
+  document_url?: string | null;
   direcao: string | null;
   encaminhada: boolean | null;
   created_at: string | null;
@@ -310,6 +318,87 @@ export default function Whatsapp() {
     });
   };
 
+  const renderAttachments = (message: WhatsappMessage) => {
+    const attachments: JSX.Element[] = [];
+
+    if (message.image_url) {
+      attachments.push(
+        <img
+          key={`${message.message_id}-image`}
+          src={message.image_url}
+          alt="Imagem"
+          className="mt-2 max-h-64 w-full rounded-md object-cover"
+        />
+      );
+    }
+
+    if (message.video_url) {
+      attachments.push(
+        <video
+          key={`${message.message_id}-video`}
+          src={message.video_url}
+          controls
+          className="mt-2 w-full rounded-md"
+        />
+      );
+    }
+
+    if (message.audio_url) {
+      attachments.push(
+        <div
+          key={`${message.message_id}-audio`}
+          className="mt-2 flex items-center gap-2 rounded-md bg-background/70 p-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+          >
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          <audio src={message.audio_url} controls className="w-full" />
+        </div>
+      );
+    }
+
+    if (message.document_url) {
+      attachments.push(
+        <a
+          key={`${message.message_id}-document`}
+          href={message.document_url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-2 rounded-md bg-background/70 px-3 py-2 text-sm font-medium underline"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="m15 2 7 7-7-7Z" />
+            <path d="M15 2v7h7" />
+            <path d="M18 14v7H3V3h7" />
+          </svg>
+          Documento
+        </a>
+      );
+    }
+
+    return attachments;
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -514,6 +603,7 @@ export default function Whatsapp() {
                 <ScrollArea className="flex-1 bg-muted/20 p-4">
                   <div className="space-y-3">
                     {currentMessages.map((message, index) => {
+                      const attachments = renderAttachments(message);
                       const previousMessage = currentMessages[index - 1];
                       const currentDateLabel = formatDateLabel(message.created_at);
                       const previousDateLabel = formatDateLabel(previousMessage?.created_at);
@@ -543,7 +633,12 @@ export default function Whatsapp() {
                               {message.source === "group" && "nome_wpp" in message && message.nome_wpp && (
                                 <p className="mb-1 text-[11px] font-semibold opacity-80">{message.nome_wpp}</p>
                               )}
-                              <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                              {message.message && (
+                                <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                              )}
+                              {attachments.length > 0 && (
+                                <div className="space-y-2">{attachments}</div>
+                              )}
                               <div className="mt-1 flex items-center justify-end gap-1">
                                 {message.is_edited && (
                                   <span className="text-[10px] opacity-60">editado</span>
