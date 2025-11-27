@@ -1,4 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Archive,
+  CheckSquare,
+  Forward,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +13,15 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -74,6 +90,9 @@ export default function Whatsapp() {
   const [newMessage, setNewMessage] = useState("");
   const [webhookUrl, setWebhookUrl] = useState<string>("");
   const [senderProfile, setSenderProfile] = useState<SenderProfile | null>(null);
+  const [isSelectingMessages, setIsSelectingMessages] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [archivedChatKeys, setArchivedChatKeys] = useState<string[]>([]);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
   const [audioStates, setAudioStates] = useState<
     Record<string, { currentTime: number; duration: number; isPlaying: boolean }>
@@ -86,6 +105,15 @@ export default function Whatsapp() {
   } | null>(null);
 
   useEffect(() => {
+    const storedArchived = localStorage.getItem("whatsapp-archived-chats");
+    if (storedArchived) {
+      try {
+        setArchivedChatKeys(JSON.parse(storedArchived));
+      } catch (error) {
+        console.error("Erro ao carregar chats arquivados:", error);
+      }
+    }
+
     const storedWebhook = localStorage.getItem(WEBHOOK_KEY);
     if (storedWebhook) {
       setWebhookUrl(storedWebhook);
@@ -252,6 +280,7 @@ export default function Whatsapp() {
         isGroup: boolean;
         lastMessage?: WhatsappMessage;
         source: "chat" | "group";
+        archived: boolean;
       }
     >();
 
@@ -262,6 +291,7 @@ export default function Whatsapp() {
 
       const key = `${message.source}:${id}`;
       const current = grouped.get(key);
+      const isArchived = archivedChatKeys.includes(key);
       const isMoreRecent =
         message.created_at && (!current?.lastMessage?.created_at || message.created_at > current.lastMessage.created_at);
 
@@ -273,6 +303,7 @@ export default function Whatsapp() {
           isGroup: isGroupSource ? true : Boolean(message.is_group),
           lastMessage: message,
           source: message.source,
+          archived: isArchived,
         });
       }
     });
@@ -282,7 +313,7 @@ export default function Whatsapp() {
       const dateB = b.lastMessage?.created_at ? new Date(b.lastMessage.created_at).getTime() : 0;
       return dateB - dateA;
     });
-  }, [messages]);
+  }, [archivedChatKeys, messages]);
 
   const currentMessages = useMemo(
     () =>
@@ -303,6 +334,10 @@ export default function Whatsapp() {
     if (!messagesEndRef.current) return;
     messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
   }, [currentMessages, selectedChat]);
+
+  useEffect(() => {
+    clearSelection();
+  }, [selectedChat, selectedChatSource]);
 
   const senderName = useMemo(() => {
     if (senderProfile?.apelido) return senderProfile.apelido;
@@ -722,6 +757,179 @@ export default function Whatsapp() {
     return chats.find((chat) => chat.id === selectedChat && chat.source === selectedChatSource);
   }, [chats, selectedChat, selectedChatSource]);
 
+  const handleDeleteConversation = async () => {
+    if (!selectedChatData) return;
+
+    const confirmation = window.confirm(
+      "Deseja realmente excluir toda a conversa? Todas as mensagens serão removidas permanentemente."
+    );
+
+    if (!confirmation) return;
+
+    const chatKey = `${selectedChatData.source}:${selectedChatData.id}`;
+
+    if (selectedChatData.source === "group") {
+      const { error } = await supabase.from("group_messages").delete().eq("group_id", selectedChatData.id);
+
+      if (error) {
+        toast.error("Não foi possível excluir a conversa.", { description: error.message });
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("chat_messages").delete().eq("chat_id", selectedChatData.id);
+
+      if (error) {
+        toast.error("Não foi possível excluir a conversa.", { description: error.message });
+        return;
+      }
+    }
+
+    setMessages((prev) => prev.filter((message) => {
+      const id = message.source === "group" ? message.group_id : message.chat_id;
+      return `${message.source}:${id}` !== chatKey;
+    }));
+
+    setArchivedChatKeys((prev) => {
+      const next = prev.filter((key) => key !== chatKey);
+      localStorage.setItem("whatsapp-archived-chats", JSON.stringify(next));
+      return next;
+    });
+
+    setSelectedChat(null);
+    setSelectedChatSource(null);
+    setSelectedMessageIds([]);
+    setIsSelectingMessages(false);
+    toast.success("Conversa excluída com sucesso.");
+  };
+
+  const handleSelectMessages = () => {
+    if (!selectedChat) {
+      toast.error("Selecione uma conversa para escolher mensagens.");
+      return;
+    }
+
+    setSelectedMessageIds([]);
+    setIsSelectingMessages(true);
+  };
+
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds((prev) =>
+      prev.includes(messageId) ? prev.filter((id) => id !== messageId) : [...prev, messageId]
+    );
+  };
+
+  const clearSelection = () => {
+    setIsSelectingMessages(false);
+    setSelectedMessageIds([]);
+  };
+
+  const handleDeleteSelectedMessages = async () => {
+    if (selectedMessageIds.length === 0) return;
+
+    const confirmation = window.confirm("Tem certeza que deseja excluir as mensagens selecionadas?");
+    if (!confirmation) return;
+
+    const selectedMessagesForChat = currentMessages.filter(
+      (message) => selectedMessageIds.includes(message.message_id) && message.source === "chat"
+    );
+    const selectedMessagesForGroup = currentMessages.filter(
+      (message) => selectedMessageIds.includes(message.message_id) && message.source === "group"
+    );
+
+    if (selectedMessagesForChat.length > 0) {
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .in(
+          "message_id",
+          selectedMessagesForChat.map((message) => message.message_id)
+        );
+
+      if (error) {
+        toast.error("Não foi possível excluir algumas mensagens.", { description: error.message });
+        return;
+      }
+    }
+
+    if (selectedMessagesForGroup.length > 0) {
+      const { error } = await supabase
+        .from("group_messages")
+        .delete()
+        .in(
+          "message_id",
+          selectedMessagesForGroup.map((message) => message.message_id)
+        );
+
+      if (error) {
+        toast.error("Não foi possível excluir algumas mensagens.", { description: error.message });
+        return;
+      }
+    }
+
+    setMessages((prev) => prev.filter((message) => !selectedMessageIds.includes(message.message_id)));
+    clearSelection();
+    toast.success("Mensagens excluídas com sucesso.");
+  };
+
+  const handleForwardSelectedMessages = async () => {
+    if (selectedMessageIds.length === 0) return;
+
+    const targetChatId = window.prompt("Informe o ID ou número do chat para encaminhar as mensagens:");
+    if (!targetChatId) return;
+
+    const targetChatName =
+      window.prompt("Informe o nome do chat/contato de destino (opcional):") || "Chat encaminhado";
+
+    const messagesToForward = currentMessages.filter((message) => selectedMessageIds.includes(message.message_id));
+
+    const recordsToInsert = messagesToForward.map((message, index) => {
+      const createdAt = new Date();
+      createdAt.setMilliseconds(createdAt.getMilliseconds() + index);
+
+      return {
+        chat_id: targetChatId,
+        message_id: crypto.randomUUID(),
+        numero_wpp: null,
+        chat_name: targetChatName,
+        direcao: "SENT",
+        foto_contato: null,
+        encaminhado: true,
+        is_group: false,
+        is_edited: false,
+        message: `*Encaminhado*:\n${message.message ?? "[Mensagem sem texto]"}`,
+        reference_message_id: message.message_id,
+        created_at: createdAt.toISOString(),
+        source: "chat" as const,
+      } satisfies ChatMessage & { source: "chat" };
+    });
+
+    const { error } = await supabase.from("chat_messages").insert(recordsToInsert.map(({ source, ...record }) => record));
+
+    if (error) {
+      toast.error("Não foi possível encaminhar as mensagens.", { description: error.message });
+      return;
+    }
+
+    setMessages((prev) => [...prev, ...recordsToInsert]);
+    toast.success("Mensagens encaminhadas com sucesso.");
+    clearSelection();
+  };
+
+  const handleArchiveChat = () => {
+    if (!selectedChatData) return;
+
+    const chatKey = `${selectedChatData.source}:${selectedChatData.id}`;
+    const isCurrentlyArchived = archivedChatKeys.includes(chatKey);
+
+    setArchivedChatKeys((prev) => {
+      const next = prev.includes(chatKey) ? prev.filter((key) => key !== chatKey) : [...prev, chatKey];
+      localStorage.setItem("whatsapp-archived-chats", JSON.stringify(next));
+      return next;
+    });
+
+    toast.success(isCurrentlyArchived ? "Chat desarquivado." : "Chat arquivado.");
+  };
+
   return (
     <>
       <audio
@@ -769,6 +977,7 @@ export default function Whatsapp() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
                           <p className="truncate font-semibold">{chat.name}</p>
+                          {chat.archived && <Badge variant="outline">Arquivado</Badge>}
                           <span className="text-xs text-muted-foreground">
                             {chat.lastMessage?.created_at
                               ? new Date(chat.lastMessage.created_at).toLocaleTimeString("pt-BR", {
@@ -807,12 +1016,64 @@ export default function Whatsapp() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold">{selectedChatData?.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{selectedChatData?.name}</p>
+                      {selectedChatData?.archived && <Badge variant="outline">Arquivado</Badge>}
+                    </div>
                     {selectedChatData?.isGroup && (
                       <p className="text-xs text-muted-foreground">Grupo</p>
                     )}
                   </div>
+                  <div className="ml-auto">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <MoreVertical className="h-5 w-5" />
+                          <span className="sr-only">Abrir menu do chat</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuLabel>Ações do chat</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={handleDeleteConversation} className="gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          <span>Excluir conversa</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleSelectMessages} className="gap-2">
+                          <CheckSquare className="h-4 w-4" />
+                          <span>Selecionar Mensagens</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleSelectMessages} className="gap-2">
+                          <Forward className="h-4 w-4" />
+                          <span>Encaminhar mensagens</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleArchiveChat} className="gap-2">
+                          <Archive className="h-4 w-4" />
+                          <span>{selectedChatData?.archived ? "Desarquivar chat" : "Arquivar chat"}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
+
+                {isSelectingMessages && (
+                  <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3 text-sm">
+                    <p className="font-semibold">
+                      {selectedMessageIds.length} mensagem{selectedMessageIds.length === 1 ? "" : "s"} selecionada{selectedMessageIds.length === 1 ? "" : "s"}
+                    </p>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={handleForwardSelectedMessages} disabled={selectedMessageIds.length === 0}>
+                        <Forward className="mr-2 h-4 w-4" /> Encaminhar
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={handleDeleteSelectedMessages} disabled={selectedMessageIds.length === 0}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={clearSelection}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Mensagens */}
                 <ScrollArea className="flex-1 bg-muted/20 p-4">
@@ -823,6 +1084,7 @@ export default function Whatsapp() {
                       const currentDateLabel = formatDateLabel(message.created_at);
                       const previousDateLabel = formatDateLabel(previousMessage?.created_at);
                       const showDateSeparator = index === 0 || currentDateLabel !== previousDateLabel;
+                      const isSelected = selectedMessageIds.includes(message.message_id);
 
                       return (
                         <div key={message.message_id} className="space-y-2">
@@ -837,13 +1099,23 @@ export default function Whatsapp() {
                           )}
                           <div
                             className={`flex ${message.direcao === "SENT" ? "justify-end" : "justify-start"}`}
+                            onClick={() => isSelectingMessages && toggleMessageSelection(message.message_id)}
                           >
+                            {isSelectingMessages && (
+                              <div className="mr-2 flex items-start pt-1">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleMessageSelection(message.message_id)}
+                                  aria-label={`Selecionar mensagem ${index + 1}`}
+                                />
+                              </div>
+                            )}
                             <div
                               className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
                                 message.direcao === "SENT"
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-background border border-border"
-                              }`}
+                              } ${isSelected ? "ring-2 ring-primary" : ""}`}
                             >
                               {message.source === "group" && "nome_wpp" in message && message.nome_wpp && (
                                 <p className="mb-1 text-[11px] font-semibold opacity-80">{message.nome_wpp}</p>
