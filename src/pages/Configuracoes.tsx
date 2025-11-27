@@ -15,6 +15,20 @@ import { logger } from "@/lib/logger";
 export default function Configuracoes() {
   type AccessLevel = "admin" | "gerente" | "supervisor" | "assistente" | "basico";
 
+  const DEFAULT_N8N_URL = "https://n8n.camaleon.com.br/";
+  const normalizeN8nUrl = (url: string) => {
+    if (!url) return DEFAULT_N8N_URL;
+    try {
+      return new URL(url).toString();
+    } catch (error) {
+      try {
+        return new URL(`https://${url}`).toString();
+      } catch {
+        return DEFAULT_N8N_URL;
+      }
+    }
+  };
+
   const accessLevelOptions: { value: AccessLevel; label: string; description: string }[] = [
     {
       value: "admin",
@@ -69,7 +83,10 @@ export default function Configuracoes() {
   const [isLoadingWebhook, setIsLoadingWebhook] = useState(true);
   const [isSavingWebhook, setIsSavingWebhook] = useState(false);
   const [n8nUrl, setN8nUrl] = useState(
-    () => localStorage.getItem("n8n-url") || "https://n8n.camaleon.com.br/"
+    () =>
+      (typeof window !== "undefined"
+        ? normalizeN8nUrl(localStorage.getItem("n8n-url") || DEFAULT_N8N_URL)
+        : DEFAULT_N8N_URL)
   );
   const [isLoadingN8nUrl, setIsLoadingN8nUrl] = useState(true);
   const [isSavingN8nUrl, setIsSavingN8nUrl] = useState(false);
@@ -142,16 +159,17 @@ export default function Configuracoes() {
 
         const resolvedUrl =
           typeof data?.value === "string"
-            ? data.value
+            ? normalizeN8nUrl(data.value)
             : data?.value &&
                 typeof data.value === "object" &&
                 "url" in data.value &&
                 typeof (data.value as { url?: unknown }).url === "string"
-              ? (data.value as { url: string }).url
-              : "https://n8n.camaleon.com.br/";
+              ? normalizeN8nUrl((data.value as { url: string }).url)
+              : DEFAULT_N8N_URL;
 
-        setN8nUrl(resolvedUrl);
-        localStorage.setItem("n8n-url", resolvedUrl);
+        const sanitizedUrl = normalizeN8nUrl(resolvedUrl);
+        setN8nUrl(sanitizedUrl);
+        localStorage.setItem("n8n-url", sanitizedUrl);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         const errorStack = error instanceof Error ? error.stack : undefined;
@@ -578,17 +596,19 @@ export default function Configuracoes() {
                 <Button
                   disabled={isSavingN8nUrl}
                   onClick={async () => {
+                    const sanitizedUrl = normalizeN8nUrl(n8nUrl);
                     setIsSavingN8nUrl(true);
                     try {
                       const { error } = await supabase.from("global_settings").upsert({
                         key: "n8n_url",
-                        value: n8nUrl,
+                        value: sanitizedUrl,
                       });
 
                       if (error) throw error;
 
-                      localStorage.setItem("n8n-url", n8nUrl);
-                      await logger.success("URL do n8n atualizada", { url: n8nUrl });
+                      localStorage.setItem("n8n-url", sanitizedUrl);
+                      setN8nUrl(sanitizedUrl);
+                      await logger.success("URL do n8n atualizada", { url: sanitizedUrl });
                       toast.success("Link do n8n salvo como padrão!");
                     } catch (error: unknown) {
                       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -597,9 +617,14 @@ export default function Configuracoes() {
                       await logger.error("Erro ao salvar URL do n8n", "N8N_URL_SAVE", {
                         errorMessage,
                         errorStack,
-                        url: n8nUrl,
+                        url: sanitizedUrl,
                       });
-                      toast.error("Erro ao salvar link do n8n: " + errorMessage);
+                      toast.error(
+                        "Erro ao salvar link do n8n: " + errorMessage +
+                          (sanitizedUrl !== n8nUrl
+                            ? " (ajustado para " + sanitizedUrl + ")"
+                            : "")
+                      );
                     } finally {
                       setIsSavingN8nUrl(false);
                     }

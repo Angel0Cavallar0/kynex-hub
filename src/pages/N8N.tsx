@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
@@ -10,15 +7,31 @@ import { logger } from "@/lib/logger";
 const DEFAULT_N8N_URL = "https://n8n.camaleon.com.br/";
 const STORAGE_KEY = "n8n-url";
 
+const normalizeUrl = (url: string) => {
+  if (!url) return DEFAULT_N8N_URL;
+  try {
+    return new URL(url).toString();
+  } catch (error) {
+    try {
+      return new URL(`https://${url}`).toString();
+    } catch {
+      return DEFAULT_N8N_URL;
+    }
+  }
+};
+
 export default function N8N() {
   const [n8nUrl, setN8nUrl] = useState(DEFAULT_N8N_URL);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadError, setHasLoadError] = useState(false);
+
+  const sanitizedUrl = useMemo(() => normalizeUrl(n8nUrl), [n8nUrl]);
 
   useEffect(() => {
     const loadUrl = async () => {
       const storedUrl = localStorage.getItem(STORAGE_KEY);
       if (storedUrl) {
-        setN8nUrl(storedUrl);
+        setN8nUrl(normalizeUrl(storedUrl));
         setIsLoading(false);
         return;
       }
@@ -34,9 +47,9 @@ export default function N8N() {
 
         const resolvedUrl =
           typeof data?.value === "string"
-            ? data.value
+            ? normalizeUrl(data.value)
             : typeof (data?.value as { url?: string })?.url === "string"
-              ? (data?.value as { url?: string }).url
+              ? normalizeUrl((data?.value as { url?: string }).url)
               : DEFAULT_N8N_URL;
 
         setN8nUrl(resolvedUrl || DEFAULT_N8N_URL);
@@ -61,51 +74,31 @@ export default function N8N() {
 
   return (
     <Layout noPadding>
-      <div className="flex h-full flex-col">
-        <div className="border-b p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">n8n</h1>
-              <p className="text-muted-foreground">
-                Acesse seus fluxos do n8n diretamente dentro da plataforma.
+      <div className="relative flex h-full flex-col bg-background">
+        <iframe
+          key={sanitizedUrl}
+          title="n8n"
+          src={sanitizedUrl}
+          className="h-full w-full border-0"
+          allow="clipboard-write; encrypted-media; fullscreen; display-capture"
+          allowFullScreen
+          onLoad={() => setHasLoadError(false)}
+          onError={() => {
+            setHasLoadError(true);
+            toast.error("Não foi possível carregar o n8n. Verifique se o link está correto.");
+          }}
+        />
+
+        {!isLoading && hasLoadError && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/70">
+            <div className="rounded-lg bg-muted/80 px-6 py-4 text-center shadow-lg">
+              <p className="text-lg font-semibold">Falha ao abrir o n8n</p>
+              <p className="text-sm text-muted-foreground">
+                Confirme o endereço em Configurações &gt; n8n ou tente novamente mais tarde.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Input
-                value={n8nUrl}
-                onChange={(e) => setN8nUrl(e.target.value)}
-                className="w-80"
-                aria-label="URL do n8n"
-              />
-              <Button
-                variant="outline"
-                onClick={() => {
-                  localStorage.setItem(STORAGE_KEY, n8nUrl);
-                  toast.success("Link do n8n atualizado para esta sessão.");
-                }}
-                disabled={isLoading}
-              >
-                Atualizar link
-              </Button>
-            </div>
           </div>
-        </div>
-
-        <div className="flex-1 bg-muted/30">
-          <Card className="m-6 h-[calc(100%-3rem)] overflow-hidden">
-            <CardHeader>
-              <CardTitle>Navegador interno</CardTitle>
-              <CardDescription>O link é carregado dentro do painel para maior segurança.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-full p-0">
-              <iframe
-                title="n8n"
-                src={n8nUrl || DEFAULT_N8N_URL}
-                className="h-full w-full border-0"
-              />
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </div>
     </Layout>
   );
