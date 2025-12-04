@@ -187,36 +187,36 @@ export default function ColaboradorDetalhes() {
     },
   ];
 
-  const roleOptions = [
+  const roleOptions: { value: AccessLevel; label: string; description: string }[] = [
     {
-      value: "admin" as const,
+      value: "admin",
       label: "Administrador",
       description: "Acesso completo a todas as seções e configurações.",
     },
     {
-      value: "gerente" as const,
+      value: "manager",
       label: "Gerente",
       description: "Gerencia equipes, aprova processos e acompanha indicadores.",
     },
     {
-      value: "supervisor" as const,
+      value: "supervisor",
       label: "Supervisor",
       description: "Acompanha o desempenho da equipe e distribui atividades.",
     },
     {
-      value: "assistente" as const,
+      value: "assistent",
       label: "Assistente",
       description: "Atua no suporte operacional com acessos controlados.",
     },
     {
-      value: "geral" as const,
+      value: "basic",
       label: "Básico",
       description: "Acesso básico apenas ao necessário para o trabalho diário.",
     },
   ];
 
   const crmRoleOptions = roleOptions.map((option) =>
-    option.value === "geral"
+    option.value === "basic"
       ? { ...option, value: "negado" as const, label: "Negado" }
       : option,
   ) as { value: CrmAccessLevel; label: string; description: string }[];
@@ -474,7 +474,7 @@ export default function ColaboradorDetalhes() {
       setColaborador(colaboradorData);
 
       const fallbackRole = normalizeRole(
-        colaboradorData.admin ? "admin" : colaboradorData.supervisor ? "supervisor" : "geral"
+        colaboradorData.admin ? "admin" : colaboradorData.supervisor ? "supervisor" : "basic"
       );
       setRole(fallbackRole);
       setStatus(
