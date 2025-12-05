@@ -6,6 +6,26 @@ import { toast } from "sonner";
 
 type AppRole = "admin" | "manager" | "supervisor" | "assistent" | "basic";
 
+const normalizeRole = (value: string | null | undefined): AppRole | null => {
+  switch (value) {
+    case "admin":
+    case "manager":
+    case "supervisor":
+    case "assistent":
+    case "basic":
+      return value;
+    case "gerente":
+      return "manager";
+    case "assistente":
+      return "assistent";
+    case "geral":
+    case "user":
+      return "basic";
+    default:
+      return null;
+  }
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -36,7 +56,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
-    return (data?.role as AppRole | null) || null;
+    const normalizedRole = normalizeRole(data?.role ?? null);
+
+    if (data?.role && normalizedRole && data.role !== normalizedRole) {
+      await supabase
+        .from("user_roles")
+        .update({ role: normalizedRole })
+        .eq("user_id", userId);
+    }
+
+    return normalizedRole;
   };
 
   useEffect(() => {
@@ -88,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (data.user) {
       const role = await fetchUserRole(data.user.id);
-      
+
       const allowedRoles: AppRole[] = ["admin", "manager", "supervisor", "assistent"];
       if (!role || !allowedRoles.includes(role)) {
         await supabase.auth.signOut();
