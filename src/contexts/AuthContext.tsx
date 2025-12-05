@@ -6,6 +6,10 @@ import { toast } from "sonner";
 
 type AppRole = "admin" | "manager" | "supervisor" | "assistent" | "basic";
 
+const roleOrder: AppRole[] = ["basic", "assistent", "supervisor", "manager", "admin"];
+const isRoleAllowed = (role: AppRole, minRole: AppRole) =>
+  roleOrder.indexOf(role) >= roleOrder.indexOf(minRole);
+
 const normalizeRole = (value: string | null | undefined): AppRole | null => {
   switch (value) {
     case "admin":
@@ -30,6 +34,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   userRole: AppRole | null;
+  minAccessLevel: AppRole;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -41,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [minAccessLevel, setMinAccessLevel] = useState<AppRole>("basic");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -68,6 +74,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return normalizedRole;
   };
 
+  const fetchMinAccessLevel = async (): Promise<AppRole> => {
+    const { data, error } = await supabase
+      .from("global_settings")
+      .select("value")
+      .eq("key", "min_access_level")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao buscar nível mínimo de acesso:", error);
+      return "basic";
+    }
+
+    const normalizedValue = normalizeRole(typeof data?.value === "string" ? data.value : null);
+    return normalizedValue ?? "basic";
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -76,13 +98,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (session?.user) {
           setTimeout(async () => {
-            const role = await fetchUserRole(session.user.id);
+            const [role, minLevel] = await Promise.all([
+              fetchUserRole(session.user.id),
+              fetchMinAccessLevel(),
+            ]);
+
             setUserRole(role);
+            setMinAccessLevel(minLevel);
             setLoading(false);
           }, 0);
         } else {
           setUserRole(null);
-          setLoading(false);
+          fetchMinAccessLevel().then(setMinAccessLevel).finally(() => setLoading(false));
         }
       }
     );
@@ -93,12 +120,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         setTimeout(async () => {
-          const role = await fetchUserRole(session.user.id);
+          const [role, minLevel] = await Promise.all([
+            fetchUserRole(session.user.id),
+            fetchMinAccessLevel(),
+          ]);
+
           setUserRole(role);
+          setMinAccessLevel(minLevel);
           setLoading(false);
         }, 0);
       } else {
-        setLoading(false);
+        fetchMinAccessLevel().then(setMinAccessLevel).finally(() => setLoading(false));
       }
     });
 
@@ -116,10 +148,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (data.user) {
-      const role = await fetchUserRole(data.user.id);
+      const [role, minLevel] = await Promise.all([
+        fetchUserRole(data.user.id),
+        fetchMinAccessLevel(),
+      ]);
 
-      const allowedRoles: AppRole[] = ["admin", "manager", "supervisor", "assistent"];
-      if (!role || !allowedRoles.includes(role)) {
+      setMinAccessLevel(minLevel);
+
+      if (!role || !isRoleAllowed(role, minLevel)) {
         await supabase.auth.signOut();
         throw new Error("Usuário sem permissão para acessar o painel.");
       }
@@ -136,7 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, userRole, loading, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, session, userRole, minAccessLevel, loading, signIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
