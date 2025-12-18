@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   CheckSquare,
@@ -36,6 +36,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/lib/logger";
 
 type ChatMessage = {
   chat_id: string;
@@ -754,24 +755,21 @@ export default function Whatsapp() {
     setReplyTo(null);
 
     if (webhookUrl) {
-      try {
-        const sanitizeMessage = (message: WhatsappMessage | null) => {
-          if (!message) return null;
-          const { source, ...rest } = message;
-          return rest;
-        };
+      const sanitizeMessage = (message: WhatsappMessage | null) => {
+        if (!message) return null;
+        const { source, ...rest } = message;
+        return rest;
+      };
 
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            reply: sanitizeMessage(replyTo),
-            message: sanitizeMessage(sentMessage),
-            content_type: "Texto",
-          }),
-        });
-      } catch (err) {
-        console.error(err);
+      const webhookTriggered = await sendWhatsappWebhook(
+        {
+          reply: sanitizeMessage(replyTo),
+          message: sanitizeMessage(sentMessage),
+        },
+        "Texto"
+      );
+
+      if (!webhookTriggered) {
         toast.warning("Mensagem enviada, mas o webhook não pôde ser acionado.");
       }
     }
@@ -801,6 +799,59 @@ export default function Whatsapp() {
     }
     setSelectedFile(null);
   };
+
+  const sendWhatsappWebhook = useCallback(
+    async (
+      payload: Record<string, unknown>,
+      contentTypeLabel: string
+    ): Promise<boolean> => {
+      if (!webhookUrl) return true;
+
+      const body = {
+        ...payload,
+        content_type: contentTypeLabel,
+      };
+
+      try {
+        const response = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => undefined);
+          await logger.error(
+            "Webhook do WhatsApp respondeu com erro",
+            "WHATSAPP_WEBHOOK_RESPONSE_ERROR",
+            {
+              endpoint: webhookUrl,
+              status: response.status,
+              statusText: response.statusText,
+              responseBody: errorBody,
+              payload: body,
+            }
+          );
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        await logger.error(
+          "Erro ao acionar webhook do WhatsApp",
+          "WHATSAPP_WEBHOOK_TRIGGER_ERROR",
+          {
+            endpoint: webhookUrl,
+            payload: body,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          }
+        );
+        return false;
+      }
+    },
+    [webhookUrl]
+  );
 
   const handleSendFile = async () => {
     if (!selectedFile || !selectedChat || !selectedChatSource) {
@@ -918,25 +969,22 @@ export default function Whatsapp() {
 
       // Trigger webhook with content type
       if (webhookUrl && sentMessage) {
-        try {
-          const { source, ...rest } = sentMessage;
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reply: replyTo ? (() => { const { source, ...r } = replyTo; return r; })() : null,
-              message: rest,
-              content_type: getContentTypeLabel(type),
-              file_info: {
-                url: fileUrl,
-                name: file.name,
-                size: file.size,
-                type: file.type,
-              },
-            }),
-          });
-        } catch (err) {
-          console.error(err);
+        const { source, ...rest } = sentMessage;
+        const webhookTriggered = await sendWhatsappWebhook(
+          {
+            reply: replyTo ? (() => { const { source, ...r } = replyTo; return r; })() : null,
+            message: rest,
+            file_info: {
+              url: fileUrl,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+            },
+          },
+          getContentTypeLabel(type)
+        );
+
+        if (!webhookTriggered) {
           toast.warning("Arquivo enviado, mas o webhook não pôde ser acionado.");
         }
       }
