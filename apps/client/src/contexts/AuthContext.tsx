@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
-  const fetchUserRole = async (userId: string): Promise<ClientRole | null> => {
+  const fetchUserRole = async (userId: string, email?: string | null): Promise<ClientRole | null> => {
     const { data, error } = await supabase
       .from("client_user_role")
       .select("role")
@@ -48,6 +48,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (typeof data?.role !== "string") {
+      if (email) {
+        const { data: emailData, error: emailError } = await supabase
+          .from("client_user_role")
+          .select("role")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (emailError) {
+          console.error("Erro ao buscar role do cliente por email:", emailError);
+          return null;
+        }
+
+        if (typeof emailData?.role !== "string") {
+          return null;
+        }
+
+        return normalizeRole(emailData.role);
+      }
+
       return null;
     }
 
@@ -78,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (session?.user) {
           const [role, minLevel] = await Promise.all([
-            fetchUserRole(session.user.id),
+            fetchUserRole(session.user.id, session.user.email),
             fetchMinAccessLevel(),
           ]);
 
@@ -107,7 +126,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        Promise.all([fetchUserRole(session.user.id), fetchMinAccessLevel()]).then(
+        Promise.all([
+          fetchUserRole(session.user.id, session.user.email),
+          fetchMinAccessLevel(),
+        ]).then(
           async ([role, minLevel]) => {
             setMinAccessLevel(minLevel);
             setUserRole(role);
@@ -147,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (data.user) {
         const [role, minLevel] = await Promise.all([
-          fetchUserRole(data.user.id),
+          fetchUserRole(data.user.id, data.user.email),
           fetchMinAccessLevel(),
         ]);
 
