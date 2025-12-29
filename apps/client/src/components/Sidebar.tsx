@@ -2,12 +2,13 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  MoreVertical,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,6 +33,7 @@ type SidebarProps = {
 export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
   const { user, signOut } = useAuth();
   const { logoUrl, logoIconUrl } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const displayName = useMemo(() => {
     return user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuário";
   }, [user?.email, user?.user_metadata?.name]);
@@ -117,7 +119,12 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className={cn("border-t border-sidebar-border px-4 py-2", collapsed ? "px-2" : undefined)}>
+        <div
+          className={cn(
+            "relative border-t border-sidebar-border px-4 py-2",
+            collapsed ? "px-2" : undefined
+          )}
+        >
           <div className="flex flex-col gap-3">
             <button
               type="button"
@@ -143,37 +150,86 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
               )}
             </button>
 
-            <div className="flex items-center justify-center gap-3">
-              {onToggleCollapse && (
+            {collapsed ? (
+              <div className="flex items-center justify-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      onClick={onToggleCollapse}
-                      aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+                      onClick={() => setIsMenuOpen((prev) => !prev)}
+                      aria-label="Abrir menu"
                       className="flex items-center justify-center p-2 text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
                     >
-                      {collapsed ? <PanelLeftOpen className={iconClassName} /> : <PanelLeftClose className={iconClassName} />}
-                      <span className="sr-only">{collapsed ? "Expandir menu" : "Recolher menu"}</span>
+                      <MoreVertical className={iconClassName} />
+                      <span className="sr-only">Abrir menu</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top">{collapsed ? "Expandir" : "Recolher"}</TooltipContent>
+                  <TooltipContent side="top">Menu</TooltipContent>
                 </Tooltip>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={signOut}
-                    aria-label="Sair"
-                    className="flex items-center justify-center p-2 text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-                  >
-                    <LogOut className={iconClassName} />
-                    <span className="sr-only">Sair</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Sair</TooltipContent>
-              </Tooltip>
-            </div>
+                {isMenuOpen && (
+                  <div className="absolute bottom-14 left-1/2 w-44 -translate-x-1/2 rounded-lg border border-sidebar-border bg-sidebar p-2 text-sidebar-foreground shadow-lg">
+                    <div className="flex flex-col gap-1">
+                      {onToggleCollapse && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onToggleCollapse();
+                            setIsMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent/10"
+                        >
+                          <PanelLeftOpen className={iconClassName} />
+                          <span>Expandir menu</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          signOut();
+                        }}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent/10"
+                      >
+                        <LogOut className={iconClassName} />
+                        <span>Sair</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                {onToggleCollapse && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={onToggleCollapse}
+                        aria-label="Recolher menu"
+                        className="flex items-center justify-center p-2 text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                      >
+                        <PanelLeftClose className={iconClassName} />
+                        <span className="sr-only">Recolher menu</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Recolher</TooltipContent>
+                  </Tooltip>
+                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={signOut}
+                      aria-label="Sair"
+                      className="flex items-center justify-center p-2 text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                    >
+                      <LogOut className={iconClassName} />
+                      <span className="sr-only">Sair</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Sair</TooltipContent>
+                </Tooltip>
+              </div>
+            )}
           </div>
         </div>
       </aside>
