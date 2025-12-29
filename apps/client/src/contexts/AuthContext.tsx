@@ -47,7 +47,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
-    return normalizeRole(typeof data?.role === "string" ? data.role : null);
+    if (typeof data?.role !== "string") {
+      return null;
+    }
+
+    return normalizeRole(data.role);
   };
 
   const fetchMinAccessLevel = async (): Promise<ClientRole> => {
