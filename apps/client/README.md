@@ -1,6 +1,6 @@
-# Agência Hub - Client App
+# Kynex Hub - Client App
 
-Aplicação client do Agência Hub com autenticação e dashboard.
+Aplicação client do Kynex Hub com autenticação e dashboard.
 
 ## 🚀 Funcionalidades
 
@@ -21,7 +21,7 @@ Aplicação client do Agência Hub com autenticação e dashboard.
 1. **Clone o repositório** (se ainda não fez):
 ```bash
 git clone [url-do-repositorio]
-cd agencia-hub/apps/client
+cd kynex-hub/apps/client
 ```
 
 2. **Instale as dependências**:
