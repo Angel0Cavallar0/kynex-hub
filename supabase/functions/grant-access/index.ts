@@ -71,7 +71,7 @@ serve(async (req) => {
 
     // Create user invitation
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `https://admin.camaleon.com.br/signup?email=${encodeURIComponent(email)}`,
+      redirectTo: `https://admin.kynex.com.br/signup?email=${encodeURIComponent(email)}`,
     });
 
     if (inviteError) {

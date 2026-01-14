@@ -19,7 +19,7 @@ export default function Configuracoes() {
   type AccessLevel = "admin" | "manager" | "supervisor" | "assistent" | "basic";
   type ClientAccessLevel = "admin";
 
-  const DEFAULT_N8N_URL = "https://n8n.camaleon.com.br/";
+  const DEFAULT_N8N_URL = "https://n8n.kynex.com.br/";
   const normalizeN8nUrl = (url: string) => {
     if (!url) return DEFAULT_N8N_URL;
     try {
@@ -860,7 +860,7 @@ export default function Configuracoes() {
                   <Label htmlFor="n8n-url">URL do n8n</Label>
                   <Input
                     id="n8n-url"
-                    placeholder="https://n8n.camaleon.com.br/"
+                    placeholder="https://n8n.kynex.com.br/"
                     disabled={isLoadingN8nUrl}
                     value={n8nUrl}
                     onChange={(e) => setN8nUrl(e.target.value)}

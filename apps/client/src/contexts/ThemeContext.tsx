@@ -13,11 +13,11 @@ interface ThemeContextType extends ThemeConfig {
 
 const defaultConfig: ThemeConfig = {
   logoUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/logo_branca_transp.png",
+    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/logo_branca_transp.png",
   logoIconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon_branca.png",
+    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/fav_icon_branca.png",
   faviconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon.webp",
+    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/fav_icon.webp",
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

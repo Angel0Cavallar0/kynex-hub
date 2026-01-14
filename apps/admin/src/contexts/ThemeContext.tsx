@@ -43,15 +43,15 @@ const defaultConfig: ThemeConfig = {
   darkMode: true,
   primaryColor: "166 100% 21%",
   secondaryColor: "166 98% 34%",
-  logoUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/logo_branca_transp.png",
+  logoUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/logo_branca_transp.png",
   logoIconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon_branca.png",
-  faviconUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon.webp",
+    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/fav_icon_branca.png",
+  faviconUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_kynex/fav_icon.webp",
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [config, setConfig] = useState<ThemeConfig>(() => {
-    const saved = localStorage.getItem("leon-theme-config");
+    const saved = localStorage.getItem("kynex-theme-config");
     if (!saved) {
       return defaultConfig;
     }
@@ -94,7 +94,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("leon-theme-config", JSON.stringify(config));
+    localStorage.setItem("kynex-theme-config", JSON.stringify(config));
     
     if (config.darkMode) {
       document.documentElement.classList.add("dark");

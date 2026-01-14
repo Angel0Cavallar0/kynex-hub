@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
-const DEFAULT_N8N_URL = "https://n8n.camaleon.com.br/";
+const DEFAULT_N8N_URL = "https://n8n.kynex.com.br/";
 const STORAGE_KEY = "n8n-url";
 
 const normalizeUrl = (url: string) => {
