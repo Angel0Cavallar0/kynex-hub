@@ -1,4 +1,4 @@
-# Agência Hub - Monorepo
+# Kynex Hub - Monorepo
 
 Sistema de gestão para agências digitais, com aplicações separadas para administração e clientes.
 
