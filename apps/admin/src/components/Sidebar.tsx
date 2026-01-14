@@ -265,7 +265,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
               collapsed ? "text-sm" : undefined
             )}
           >
-            Leon Manager
+            Kynex Hub
           </h2>
         )}
       </div>
