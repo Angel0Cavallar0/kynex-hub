@@ -140,4 +140,4 @@ apps/client/
 
 ## 📝 Licença
 
-Privado - Agência Hub
+Privado - Kynex Hub
