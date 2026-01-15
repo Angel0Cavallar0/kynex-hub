@@ -367,7 +367,7 @@ export default function Perfil() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Meu Perfil</h1>
           <p className="text-muted-foreground">
-            Consulte suas informações cadastradas, o status atual e os níveis de acesso que você possui na Leon.
+            Consulte suas informações cadastradas, o status atual e os níveis de acesso que você possui na Kynex.
           </p>
         </div>
 
