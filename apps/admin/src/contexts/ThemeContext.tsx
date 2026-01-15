@@ -51,7 +51,7 @@ const defaultConfig: ThemeConfig = {
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [config, setConfig] = useState<ThemeConfig>(() => {
-    const saved = localStorage.getItem("leon-theme-config");
+    const saved = localStorage.getItem("kynex-theme-config");
     if (!saved) {
       return defaultConfig;
     }
@@ -94,7 +94,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("leon-theme-config", JSON.stringify(config));
+    localStorage.setItem("kynex-theme-config", JSON.stringify(config));
     
     if (config.darkMode) {
       document.documentElement.classList.add("dark");
