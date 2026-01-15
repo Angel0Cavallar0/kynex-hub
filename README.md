@@ -176,6 +176,18 @@ npm install <package> -D
 
 Este projeto é privado e confidencial.
 
----
+## PENDÊNCIAS RENOMEAÇÃO
 
-**Project URL**: https://lovable.dev/projects/851e114d-60a3-455a-beb2-5ff2b78a86db
+### FALTA ALTERAR:
+
+#### URL's das Logos
+- apps/admin/src/contexts/ThemeContext.tsx: linhas 46, 47, 48 e 49 `alteração dos links das logos - página admin`
+- apps/client/src/contexts/ThemeContext.tsx: linhas 16, 17, 18, 19 e 20 `alteração dos links das logos - página cliente`
+
+#### Domínios e Subdomínios
+- kynex-hub/supabase/functions/grant-access/index.ts: linha 74 `envio de acesso`
+- kynex-hub/apps/admin/src/pages/N8N.tsx: linha 7 `domínio n8n`
+- kynex-hub/apps/admin/src/pages/Configuracoes.tsx: linha 22 `domínio n8n`
+- kynex-hub/apps/admin/src/pages/Configuracoes.tsx: linha 22 `domínio n8n`
+
+---
