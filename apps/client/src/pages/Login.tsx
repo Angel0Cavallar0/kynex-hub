@@ -37,7 +37,7 @@ export const Login = () => {
           <div className="flex justify-center">
             <img
               src={logoUrl}
-              alt="Logo Camaleon"
+              alt="Logo Kynex"
               className="h-12 w-auto drop-shadow-lg"
             />
           </div>
