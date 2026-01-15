@@ -172,10 +172,6 @@ npm install <package> -D
 3. Push para a branch: `git push origin feature/nome`
 4. Abra um Pull Request
 
-## 📄 Licença
-
-Este projeto é privado e confidencial.
-
 ## PENDÊNCIAS RENOMEAÇÃO
 
 ### FALTA ALTERAR:
@@ -189,5 +185,10 @@ Este projeto é privado e confidencial.
 - kynex-hub/apps/admin/src/pages/N8N.tsx: linha 7 `domínio n8n`
 - kynex-hub/apps/admin/src/pages/Configuracoes.tsx: linha 22 `domínio n8n`
 - kynex-hub/apps/admin/src/pages/Configuracoes.tsx: linha 22 `domínio n8n`
+
+## 📄 Licença
+
+Este projeto é privado e confidencial. O acesso ao código-fonte não concede qualquer direito de uso, cópia, modificação, redistribuição ou exploração, total ou parcial.
+Qualquer reprodução, compartilhamento ou utilização não autorizada é expressamente proibida e poderá resultar em medidas legais cabíveis, incluindo responsabilização civil e judicial.
 
 ---
