@@ -8,6 +8,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { EnvWarning } from "@/components/EnvWarning";
 import { Toaster } from "sonner";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 function App() {
   // Show environment warning if Supabase is not configured
@@ -35,6 +36,7 @@ function App() {
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
+          <SpeedInsights />
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
