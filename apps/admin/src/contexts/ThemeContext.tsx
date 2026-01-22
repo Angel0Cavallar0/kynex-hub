@@ -43,10 +43,10 @@ const defaultConfig: ThemeConfig = {
   darkMode: true,
   primaryColor: "166 100% 21%",
   secondaryColor: "166 98% 34%",
-  logoUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/logo_branca_transp.png",
+  logoUrl: "https://seusiteaqui.com.br/logo-principal",
   logoIconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon_branca.png",
-  faviconUrl: "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon.webp",
+    "https://seusiteaqui.com.br/logo-icon",
+  faviconUrl: "https://seusiteaqui.com.br/fav-icon",
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
