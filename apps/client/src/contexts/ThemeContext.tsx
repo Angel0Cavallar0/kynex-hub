@@ -13,11 +13,11 @@ interface ThemeContextType extends ThemeConfig {
 
 const defaultConfig: ThemeConfig = {
   logoUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/logo_branca_transp.png",
+    "https://seusiteaqui.com.br/logo-principal",
   logoIconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon_branca.png",
+    "https://seusiteaqui.com.br/logo-icon",
   faviconUrl:
-    "https://cngslbtadxahipmuwftu.supabase.co/storage/v1/object/public/imagens/logos_camaleon/fav_icon.webp",
+    "https://seusiteaqui.com.br/fav-icon",
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
